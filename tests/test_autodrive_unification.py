@@ -5,6 +5,7 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 WORKFLOW_PATH = ROOT / "deploy" / "autodrive" / "argo" / "vehicle-autodrive-workflow.yaml"
+DEPLOY_SCRIPT_PATH = ROOT / "scripts" / "autodrive" / "deploy_vehicle_autodrive.sh"
 
 
 def run_command(command: str) -> subprocess.CompletedProcess[str]:
@@ -27,6 +28,12 @@ class AutodriveUnificationTests(unittest.TestCase):
         self.assertNotIn("- name: stop-vehicle2-autodrive", workflow_text)
         self.assertNotIn("- name: run-vehicle1-autodrive", workflow_text)
         self.assertNotIn("- name: run-vehicle2-autodrive", workflow_text)
+
+    def test_deploy_script_references_argo_pod_namespace(self) -> None:
+        deploy_script_text = DEPLOY_SCRIPT_PATH.read_text()
+
+        self.assertIn('echo "  kubectl get pods -n argo"', deploy_script_text)
+        self.assertNotIn('echo "  kubectl get pods -n perception"', deploy_script_text)
 
     def test_vehicle_specific_wrapper_scripts_are_removed(self) -> None:
         self.assertFalse((ROOT / "scripts" / "autodrive" / "start_vehicle1_autodrive.sh").exists())

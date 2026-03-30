@@ -306,6 +306,12 @@ ARRIVAL_MONITOR_START ...
 kubectl get wf -n argo
 ```
 
+查看 autodrive workflow Pod：
+
+```bash
+kubectl get pods -n argo -o wide
+```
+
 查看 perception 命名空间 Pod：
 
 ```bash
