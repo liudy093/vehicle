@@ -1,0 +1,11 @@
+parking_path_planning:
+  ros__parameters:
+    parking_type: 1
+    x_goal: 117.16628608
+    y_goal: 39.10526649
+    theta_goal: 181.94
+
+# test
+# longitude: 117.1664379
+# latitude: 39.10526665
+# yaw: 179.6199951171875

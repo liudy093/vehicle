@@ -1,0 +1,74 @@
+planner:
+  ros__parameters:
+    file_name: '0308NKU.txt'
+    plan_horizon: 50
+    ref_speed: 0.5
+    choice: 0 # 默认是0，其他参数时ref_speed无效，速度为采轨迹时开车速度（不推荐）。
+    trajectory_plan: 0 # 是否选择轨迹规划，0时为路径规划，1时为轨迹规划
+
+obca_planner:
+  ros__parameters:
+    file_name: 'Parallel_parking.txt'
+    ref_speed: -0.5
+    choice: 1 # 默认是0，其他参数时ref_speed无效，速度为采轨迹时开车速度（不推荐）。
+    tolerance: 0.2
+
+# parking_path_planning:
+#   ros__parameters:
+#     parking_type: 0
+#     x_goal: 0.0
+#     y_goal: 0.0
+#     theta_goal: 0.0
+
+
+## 仿真
+# parking_path_planning:
+#   ros__parameters:
+#     parking_type: 1
+#     x_goal: 151.75
+#     y_goal: -156.0
+#     theta_goal: 3.1755
+#     # theta_goal: 0.1
+
+parking_path_planning:
+  ros__parameters:
+    parking_type: 1
+    x_goal: 117.16628608
+    y_goal: 39.10526649
+    theta_goal: 181.94
+
+# sim_model:
+#   ros__parameters:
+#     # x: 31.62
+#     # y: 6.41
+#     # yaw: 0.16  
+#     # x: 451.5225933563681  #0308NKU起点
+#     # y: -165.49853248807906
+#     # yaw: 0.01
+#     # x: 661.95   #0308NKU终点
+#     # y: -163.19
+#     # yaw: 0.03
+#     x: 8.0000001   #arking
+#     y: -8.0000001
+#     yaw: 1.57
+#     speed_now: 0.0 # 仿真中初始速度
+#     delta: 0.0
+
+
+sim_model:
+  ros__parameters:
+    # x: 31.62
+    # y: 6.41
+    # yaw: 0.16  
+    # x: 451.5225933563681  #0308NKU起点
+    # y: -165.49853248807906
+    # yaw: 0.01
+    # x: 661.95   #0308NKU终点
+    # y: -163.19
+    # yaw: 0.03
+    x: 163.35   #arking
+    y: -158.81
+    yaw: 3.1596
+    # yaw : 0.1
+    speed_now: 0.0 # 仿真中初始速度
+    delta: 0.0

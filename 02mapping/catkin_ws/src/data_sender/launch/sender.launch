@@ -1,0 +1,30 @@
+<launch>
+  <arg name="sender_name" default="lidar_data_sender" />
+  <arg name="vehicle_id" default="vehicle1" />
+  <arg name="cloud_server_url" default="http://192.168.196.53:5000" />
+  <arg name="cloud_topic" default="/cloud_registered" />
+  <arg name="odom_topic" default="" />
+  <arg name="use_mock_gps" default="true" />
+  <arg name="pose_node_name" default="pose2d_publisher" />
+  <arg name="pose_x" default="-18.136" />
+  <arg name="pose_y" default="20.908" />
+  <arg name="yaw_deg" default="180.0" />
+  <arg name="publish_rate" default="5" />
+
+  <node pkg="data_listener2" type="data_sender" name="$(arg sender_name)" output="screen">
+    <param name="vehicle_id" type="string" value="$(arg vehicle_id)" />
+    <param name="cloud_server_url" type="string" value="$(arg cloud_server_url)" />
+    <param name="cloud_topic" type="string" value="$(arg cloud_topic)" />
+    <param name="odom_topic" type="string" value="$(arg odom_topic)" />
+  </node> 
+
+  <group if="$(arg use_mock_gps)">
+    <node pkg="data_listener2" type="test_pose2d.py" name="$(arg pose_node_name)" output="screen">
+      <param name="pose_x" value="$(arg pose_x)" />
+      <param name="pose_y" value="$(arg pose_y)" />
+      <param name="yaw_deg" value="$(arg yaw_deg)" />
+      <param name="publish_rate" value="$(arg publish_rate)" />
+    </node>
+  </group>
+
+</launch>

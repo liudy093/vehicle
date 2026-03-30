@@ -1,0 +1,46 @@
+DESCRIBE: " 前视激光雷达配置文件 "
+
+# 目标检测配置
+obstacle:
+  lidar_height: 0.46 # 雷达安装高度
+  range: [ 0, -9, -2, 50, 9, 1 ] # [x_min, y_min, z_min, x_max, y_max, z_max]
+  voxel_size: [ 0.5, 0.5, 10 ] # 体素柱
+
+  h_range: 0.2 # 高度的范围,对于雷达安装高度的 ±h_range 认为为地面点
+  h_extr: 0.3  # 体素中高度的极差
+  h_extr_max: 0.4 # 体素极差如果大于这个值，则一定是障碍物，不经过第二次判断
+  h_mean_extr: 0.05  # 与周围8个地面体素高度均值的差
+
+  min_points_num_10m: 5 # 每个体素中最少的点云数
+  min_points_num_20m: 3 # 每个体素中最少的点云数
+  min_points_num_30m: 2 # 每个体素中最少的点云数
+  min_points_num_100m: 2 # 每个体素中最少的点云数
+
+  up_mean_height: 0 # 在周围地面的平均高度上加一个高度
+
+  min_up_mean_points_num_10m: 8 # 一个体素中超过平均高度的点的数量
+  min_up_mean_points_num_20m: 3 # 一个体素中超过平均高度的点的数量
+  min_up_mean_points_num_30m: 2 # 一个体素中超过平均高度的点的数量
+  min_up_mean_points_num_100m: 2 # 一个体素中超过平均高度的点的数量
+
+nms:
+  is_use: True
+  # is_use: False
+  threshold: 0.3
+
+
+mot:
+  # is_use: True
+  is_use: False
+  min_hits: 3  # 连续匹配到n帧才保留数据
+  max_age: 3  # 连续失去匹配n帧删除数据
+  max_match_dis: 2  # 最远匹配距离
+
+# 点云和目标的旋转
+trans:
+  is_use: False
+
+# 用于可视化的发布器
+vis_publisher:
+  ground_and_unground_points: False  # 可视化点云分割
+  obstacle_grid: True # grid

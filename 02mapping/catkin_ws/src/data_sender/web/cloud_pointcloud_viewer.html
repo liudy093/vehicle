@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cloud Point Viewer</title>
+    <style>
+      :root {
+        --bg: #08111b;
+        --panel: rgba(7, 16, 28, 0.8);
+        --line: rgba(125, 187, 227, 0.24);
+        --text: #eef5ff;
+        --muted: #94afcd;
+        --ok: #69e2b1;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at top left, rgba(34, 73, 138, 0.32), transparent 26%),
+          radial-gradient(circle at top right, rgba(35, 120, 94, 0.24), transparent 22%),
+          linear-gradient(160deg, #07111d 0%, #0d1626 48%, #050b14 100%);
+        color: var(--text);
+        font-family: "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      }
+
+      .layout {
+        min-height: 100vh;
+        padding: 18px;
+        display: grid;
+        gap: 22px;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(5, 12, 22, 0.76);
+        backdrop-filter: blur(12px);
+      }
+
+      .toolbar-title {
+        margin: 0;
+        font-size: 14px;
+      }
+
+      .toolbar-meta {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .toolbar-controls {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .toolbar-badge {
+        padding: 6px 10px;
+        border: 1px solid rgba(125, 187, 227, 0.18);
+        border-radius: 999px;
+        background: rgba(8, 17, 29, 0.78);
+      }
+
+      .vehicle-group {
+        display: grid;
+        gap: 14px;
+      }
+
+      .vehicle-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .vehicle-title {
+        margin: 0;
+        font-size: 18px;
+        letter-spacing: 0.02em;
+      }
+
+      .vehicle-subtitle {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .vehicle-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        position: relative;
+        min-height: 320px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        overflow: hidden;
+        background: var(--panel);
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+        backdrop-filter: blur(14px);
+      }
+
+      .canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .overlay {
+        position: absolute;
+        inset: 0 auto auto 0;
+        width: 100%;
+        padding: 14px 16px;
+        background: linear-gradient(180deg, rgba(4, 10, 18, 0.88) 0%, rgba(4, 10, 18, 0.28) 100%);
+      }
+
+      .title {
+        margin: 0 0 8px;
+        font-size: 15px;
+      }
+
+      .meta {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.6;
+      }
+
+      .status {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--ok);
+      }
+
+      @media (max-width: 1180px) {
+        .card {
+          min-height: 360px;
+        }
+
+        .vehicle-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="layout">
+      <section class="toolbar">
+        <div>
+          <h1 class="toolbar-title">Cloud Point Viewer</h1>
+          <div class="toolbar-meta" id="toolbar-meta">静止视图，按需重绘</div>
+        </div>
+        <div class="toolbar-controls">
+          <label class="toggle" for="auto-rotate-toggle">
+            <input id="auto-rotate-toggle" type="checkbox" />
+            <span>自动旋转</span>
+          </label>
+          <span class="toolbar-badge" id="render-mode-badge">静态渲染</span>
+        </div>
+      </section>
+      <section id="layout"></section>
+    </main>
+
+    <template id="card-template">
+      <section class="card">
+        <canvas class="canvas"></canvas>
+        <header class="overlay">
+          <h1 class="title"></h1>
+          <p class="meta">等待点云数据...</p>
+          <div class="status">连接中</div>
+        </header>
+      </section>
+    </template>
+
+    <template id="vehicle-template">
+      <section class="vehicle-group">
+        <header class="vehicle-header">
+          <h1 class="vehicle-title"></h1>
+          <div class="vehicle-subtitle"></div>
+        </header>
+        <section class="vehicle-grid"></section>
+      </section>
+    </template>
+
+    <script>
+      const layout = document.getElementById("layout");
+      const autoRotateToggle = document.getElementById("auto-rotate-toggle");
+      const renderModeBadge = document.getElementById("render-mode-badge");
+      const toolbarMeta = document.getElementById("toolbar-meta");
+      const template = document.getElementById("card-template");
+      const vehicleTemplate = document.getElementById("vehicle-template");
+      const cardState = new Map();
+      const vehicleState = new Map();
+      let latestResponse = { vehicle_order: [], topic_order: [], topics: {}, clouds: {} };
+      let animationFrameId = null;
+      let autoRotateEnabled = false;
+      let rotationAngle = 0;
+      let lastAnimationTime = null;
+
+      function cardKey(vehicleId, lidarId) {
+        return `${vehicleId}/${lidarId}`;
+      }
+
+      function ensureCards(vehicleOrder, topicOrder, topics) {
+        for (const vehicleId of vehicleOrder) {
+          if (!vehicleState.has(vehicleId)) {
+            const node = vehicleTemplate.content.firstElementChild.cloneNode(true);
+            node.querySelector(".vehicle-title").textContent = vehicleId;
+            node.querySelector(".vehicle-subtitle").textContent =
+              vehicleId === "global" ? "云端累计地图视图" : "融合与建图主线视图";
+            layout.appendChild(node);
+            vehicleState.set(vehicleId, {
+              container: node.querySelector(".vehicle-grid"),
+            });
+          }
+
+          const group = vehicleState.get(vehicleId);
+          for (const lidarId of topicOrder) {
+            if (!((topics[vehicleId] || {})[lidarId])) {
+              continue;
+            }
+            const key = cardKey(vehicleId, lidarId);
+            if (cardState.has(key)) {
+              continue;
+            }
+
+            const node = template.content.firstElementChild.cloneNode(true);
+            const canvas = node.querySelector(".canvas");
+            const meta = node.querySelector(".meta");
+            const status = node.querySelector(".status");
+            const title = node.querySelector(".title");
+            const ctx = canvas.getContext("2d");
+
+            title.textContent = `${vehicleId} | ${lidarId} | ${(topics[vehicleId] || {})[lidarId] || ""}`;
+            group.container.appendChild(node);
+            cardState.set(key, { canvas, ctx, meta, status });
+          }
+        }
+      }
+
+      function resizeCanvas(canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const scale = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.max(1, Math.floor(rect.width * scale));
+        canvas.height = Math.max(1, Math.floor(rect.height * scale));
+      }
+
+      function projectPoint(point, bounds, angle, canvas) {
+        const centerX = (bounds.min.x + bounds.max.x) / 2;
+        const centerY = (bounds.min.y + bounds.max.y) / 2;
+        const centerZ = (bounds.min.z + bounds.max.z) / 2;
+        const x = point[0] - centerX;
+        const y = point[1] - centerY;
+        const z = point[2] - centerZ;
+
+        const cosA = Math.cos(angle);
+        const sinA = Math.sin(angle);
+        const rx = x * cosA - y * sinA;
+        const ry = x * sinA + y * cosA;
+
+        const spanX = Math.max(1, bounds.max.x - bounds.min.x);
+        const spanY = Math.max(1, bounds.max.y - bounds.min.y);
+        const spanZ = Math.max(1, bounds.max.z - bounds.min.z);
+        const scale = Math.min(
+          canvas.width / (spanX + spanY + 20),
+          canvas.height / (spanY + spanZ + 20)
+        );
+
+        return {
+          x: canvas.width / 2 + (rx - ry * 0.28) * scale,
+          y: canvas.height / 2 + (-z * 1.4 - ry * 0.62) * scale,
+          depth: ry,
+        };
+      }
+
+      function drawBackground(ctx, canvas) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, "#07111d");
+        gradient.addColorStop(0.5, "#0d1626");
+        gradient.addColorStop(1, "#050b14");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = "rgba(96, 140, 185, 0.14)";
+        ctx.lineWidth = 1;
+        for (let i = -8; i <= 8; i += 1) {
+          const y = canvas.height / 2 + i * 28;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(canvas.width, y);
+          ctx.stroke();
+        }
+      }
+
+      function drawPointCloud(ctx, canvas, payload, vehicleId, lidarId, angle) {
+        const state = cardState.get(cardKey(vehicleId, lidarId));
+        if (!state) {
+          return;
+        }
+
+        if (!payload || !payload.point_count || !payload.bounds) {
+          state.status.textContent = `等待点云进入 ${((latestResponse.topics || {})[vehicleId] || {})[lidarId] || lidarId}`;
+          return;
+        }
+
+        const points = payload.points
+          .map((point) => ({
+            point,
+            projected: projectPoint(point, payload.bounds, angle, canvas),
+          }))
+          .sort((a, b) => a.projected.depth - b.projected.depth);
+
+        let minIntensity = Infinity;
+        let maxIntensity = -Infinity;
+        for (const entry of points) {
+          minIntensity = Math.min(minIntensity, entry.point[3]);
+          maxIntensity = Math.max(maxIntensity, entry.point[3]);
+        }
+        const intensitySpan = Math.max(1e-6, maxIntensity - minIntensity);
+
+        for (const entry of points) {
+          const intensity = (entry.point[3] - minIntensity) / intensitySpan;
+          const alpha = 0.38 + intensity * 0.55;
+          const radius = 0.8 + intensity * 1.7;
+          const hue = 210 - intensity * 155;
+          ctx.fillStyle = `hsla(${hue}, 95%, ${58 + intensity * 10}%, ${alpha})`;
+          ctx.beginPath();
+          ctx.arc(entry.projected.x, entry.projected.y, radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        state.meta.textContent =
+          `frame=${payload.frame_id} | sampled=${payload.point_count} | stamp=${payload.stamp.secs}.${String(payload.stamp.nsecs).padStart(9, "0")}`;
+        state.status.textContent = autoRotateEnabled ? "已连接 | 旋转中" : "已连接 | 静止";
+      }
+
+      function renderCard(key, state) {
+        const [vehicleId, lidarId] = key.split("/");
+        drawBackground(state.ctx, state.canvas);
+        drawPointCloud(
+          state.ctx,
+          state.canvas,
+          (((latestResponse.clouds || {})[vehicleId] || {})[lidarId]),
+          vehicleId,
+          lidarId,
+          rotationAngle
+        );
+      }
+
+      function renderFrame(timestamp) {
+        animationFrameId = null;
+        if (autoRotateEnabled) {
+          if (lastAnimationTime !== null) {
+            rotationAngle += (timestamp - lastAnimationTime) * 0.00025;
+          }
+          lastAnimationTime = timestamp;
+        } else {
+          lastAnimationTime = null;
+        }
+
+        for (const [key, state] of cardState.entries()) {
+          renderCard(key, state);
+        }
+
+        if (autoRotateEnabled) {
+          scheduleRender();
+        }
+      }
+
+      function scheduleRender() {
+        if (animationFrameId !== null) {
+          return;
+        }
+        animationFrameId = requestAnimationFrame(renderFrame);
+      }
+
+      function updateToolbarState() {
+        renderModeBadge.textContent = autoRotateEnabled ? "旋转渲染" : "静态渲染";
+        toolbarMeta.textContent = autoRotateEnabled
+          ? "持续重绘，适合观察整体结构"
+          : "仅在数据更新或窗口变化时重绘，性能更稳";
+      }
+
+      async function refreshCloud() {
+        try {
+          const response = await fetch("/api/cloud", { cache: "no-store" });
+          latestResponse = await response.json();
+          ensureCards(
+            latestResponse.vehicle_order || [],
+            latestResponse.topic_order || [],
+            latestResponse.topics || {}
+          );
+          toolbarMeta.textContent = autoRotateEnabled
+            ? "持续重绘，适合观察整体结构"
+            : `静止视图，最近刷新 ${new Date().toLocaleTimeString("zh-CN", { hour12: false })}`;
+          scheduleRender();
+        } catch (error) {
+          for (const state of cardState.values()) {
+            state.status.textContent = `请求失败: ${error.message}`;
+          }
+        }
+      }
+
+      function resizeAll() {
+        for (const state of cardState.values()) {
+          resizeCanvas(state.canvas);
+        }
+        scheduleRender();
+      }
+
+      window.addEventListener("resize", resizeAll);
+      autoRotateToggle.addEventListener("change", () => {
+        autoRotateEnabled = autoRotateToggle.checked;
+        updateToolbarState();
+        scheduleRender();
+      });
+      updateToolbarState();
+      refreshCloud().then(resizeAll);
+      setInterval(refreshCloud, 1500);
+    </script>
+  </body>
+</html>

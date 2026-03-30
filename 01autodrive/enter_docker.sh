@@ -1,0 +1,3 @@
+xhost +  # 增加显示权限
+# docker run -it --privileged --device=/dev/ttyUART_232_A:/dev/GNNS --runtime nvidia -v /tmp/.x11-unix:/tmp/.x11-unix -e DISPLAY=unix$DISPLAY -v /home/nvidia/AutoDrive:/root/AutoDrive -e GDK_SCALE -e GDK_DPI_SCALE --net=host orin_images:4.0 /bin/bash
+docker run -it --privileged --device=/dev/ttyUART_232_A:/dev/GNNS --runtime nvidia -v /tmp/.x11-unix:/tmp/.x11-unix -e DISPLAY=unix$DISPLAY -v /home/nvidia/AutoDrive:/root/AutoDrive -e GDK_SCALE -e GDK_DPI_SCALE --network host orin_images:4.0 /bin/bash

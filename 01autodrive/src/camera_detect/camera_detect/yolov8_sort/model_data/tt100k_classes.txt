@@ -1,0 +1,16 @@
+pl5
+pl15
+pl20
+pl30
+pl40
+pl50
+pl60
+pl70
+pl80
+pl100
+pl120
+ps
+pn
+pne
+pg
+traffic sign

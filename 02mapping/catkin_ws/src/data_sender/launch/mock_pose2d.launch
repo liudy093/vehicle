@@ -1,0 +1,8 @@
+<launch>
+    <node pkg="data_listener2" type="test_pose2d.py" name="pose2d_publisher_v1" output="screen">
+        <param name="pose_x" value="10.5" /> 
+        <param name="pose_y" value="-2.0" />
+        <param name="yaw_deg" value="135.0" />
+        <param name="publish_rate" value="5" />
+    </node>
+</launch>

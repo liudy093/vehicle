@@ -1,0 +1,75 @@
+DESCRIBE: " 右激光雷达配置文件  先旋转，再处理，再平移"
+
+# 点云旋转
+trans: [
+                [
+                    -0.3581496414732152,
+                    -0.9336565124990562,
+                    -0.0037882688272032365,
+                    -4.1
+                ],
+                [
+                    0.9330117145258786,
+                    -0.35774474301705506,
+                    -0.03883090780733451,
+                    -1.0
+                ],
+                [
+                    0.03489949670250097,
+                    -0.017441774902830158,
+                    0.9992386149554826,
+                    0.6
+                ]
+ ]
+
+# 额外的点云裁剪
+delete:
+  forward: 3
+  back: -0.5
+  left: 2
+  right: -0.5
+
+
+# 目标检测配置
+obstacle:
+  lidar_height: 0.9 # 雷达安装高度
+  range: [ -10, -10, -1, 10, 10, 0.3 ] # [x_min, y_min, z_min, x_max, y_max, z_max]
+  voxel_size: [ 0.5, 0.5, 2 ] # 体素格子
+
+  h_range: 0.2 # 高度的范围,对于雷达安装高度的 ±h_range 认为为地面点
+  h_extr: 0.3  # 体素中高度的极差
+  h_extr_max: 0.4 # 体素极差如果大于这个值，则一定是障碍物，不经过第二次判断
+  h_mean_extr: 0.05  # 与周围8个地面体素高度均值的差
+
+  min_points_num_10m: 5 # 每个体素中最少的点云数
+  min_points_num_20m: 3 # 每个体素中最少的点云数
+  min_points_num_30m: 2 # 每个体素中最少的点云数
+  min_points_num_100m: 2 # 每个体素中最少的点云数
+
+  up_mean_height: 0 # 在周围地面的平均高度上加一个高度
+
+  min_up_mean_points_num_10m: 0 # 一个体素中超过平均高度的点的数量
+  min_up_mean_points_num_20m: 0 # 一个体素中超过平均高度的点的数量
+  min_up_mean_points_num_30m: 0 # 一个体素中超过平均高度的点的数量
+  min_up_mean_points_num_100m: 0 # 一个体素中超过平均高度的点的数量
+
+
+nms:
+  is_use: True
+  # is_use: False
+  threshold: 0.1
+
+
+mot:
+  # is_use: True
+  is_use: False
+  min_hits: 3  # 连续匹配到n帧才保留数据
+  max_age: 3  # 连续失去匹配n帧删除数据
+  max_match_dis: 2  # 最远匹配距离
+
+
+# 用于可视化的发布器
+vis_publisher:
+  all_points: True # 可视化旋转之后的全部点云
+  # all_points: False
+  obstacle_grid: True # grid

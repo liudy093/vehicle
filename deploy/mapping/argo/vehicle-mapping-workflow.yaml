@@ -1,0 +1,222 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: vehicle-mapping-
+  namespace: argo
+spec:
+  serviceAccountName: argo
+  entrypoint: vehicle-mapping
+  podGC:
+    strategy: OnWorkflowSuccess
+  ttlStrategy:
+    secondsAfterCompletion: 600
+  volumes:
+    - name: vehicle-inventory
+      configMap:
+        name: vehicle-inventory
+    - name: vehicle-autodrive-root
+      hostPath:
+        path: /home/nvidia/AutoDrive
+        type: Directory
+    - name: vehicle-mapping-root
+      hostPath:
+        path: /home/nvidia/mapping
+        type: Directory
+    - name: vehicle-dev
+      hostPath:
+        path: /dev
+        type: Directory
+  templates:
+    - name: vehicle-mapping
+      dag:
+        tasks:
+          - name: deploy-cloud
+            template: deploy-cloud
+          - name: verify-cloud
+            dependencies: ["deploy-cloud"]
+            template: verify-cloud
+          - name: restart-vehicle1
+            dependencies: ["deploy-cloud"]
+            template: restart-vehicle1
+          - name: verify-vehicle1
+            dependencies: ["restart-vehicle1"]
+            template: verify-vehicle1
+          - name: restart-vehicle2
+            dependencies: ["deploy-cloud"]
+            template: restart-vehicle2
+          - name: verify-vehicle2
+            dependencies: ["restart-vehicle2"]
+            template: verify-vehicle2
+
+    - name: deploy-cloud
+      container:
+        image: vehicle-ssh-runner:latest
+        imagePullPolicy: IfNotPresent
+        workingDir: /opt/vehicle
+        command: ["bash", "-lc"]
+        args:
+          - |
+            kubectl apply -f /opt/vehicle/deploy/shared/k8s/perception-cloud-configmap.yaml
+            kubectl apply -f /opt/vehicle/deploy/shared/k8s/perception-cloud-deployment.yaml
+            kubectl apply -f /opt/vehicle/deploy/shared/k8s/perception-cloud-service.yaml
+            kubectl rollout status deployment/perception-cloud -n perception --timeout=5m
+      nodeSelector:
+        perception.role: general
+
+    - name: verify-cloud
+      container:
+        image: vehicle-ssh-runner:latest
+        imagePullPolicy: IfNotPresent
+        workingDir: /opt/vehicle
+        command: ["bash", "-lc"]
+        args:
+          - |
+            payload="$(curl -fsS http://perception-cloud.perception.svc.cluster.local:18080/api/cloud)"
+            echo "${payload}" | grep '"clouds"' >/dev/null
+            echo "${payload}" | grep '"vehicle1"' >/dev/null
+      nodeSelector:
+        perception.role: general
+
+    - name: restart-vehicle1
+      podSpecPatch: |
+        hostPID: true
+        hostNetwork: true
+      container:
+        image: vehicle-mapping-runner:latest
+        imagePullPolicy: IfNotPresent
+        workingDir: /opt/vehicle
+        env:
+          - name: VEHICLE_INVENTORY_FILE
+            value: /opt/vehicle/runtime-config/vehicle_hosts.env
+          - name: VEHICLE_EXECUTION_MODE
+            value: pod
+        command: ["bash", "-lc"]
+        args:
+          - /opt/vehicle/scripts/mapping/start_vehicle1_mapping.sh
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: vehicle-inventory
+            mountPath: /opt/vehicle/runtime-config
+            readOnly: true
+          - name: vehicle-autodrive-root
+            mountPath: /home/nvidia/AutoDrive
+          - name: vehicle-mapping-root
+            mountPath: /home/nvidia/mapping
+          - name: vehicle-dev
+            mountPath: /dev
+      nodeSelector:
+        perception.vehicle.id: vehicle1
+      tolerations:
+        - key: perception.role
+          operator: Equal
+          value: vehicle
+          effect: NoSchedule
+
+    - name: restart-vehicle2
+      podSpecPatch: |
+        hostPID: true
+        hostNetwork: true
+      container:
+        image: vehicle-mapping-runner:latest
+        imagePullPolicy: IfNotPresent
+        workingDir: /opt/vehicle
+        env:
+          - name: VEHICLE_INVENTORY_FILE
+            value: /opt/vehicle/runtime-config/vehicle_hosts.env
+          - name: VEHICLE_EXECUTION_MODE
+            value: pod
+        command: ["bash", "-lc"]
+        args:
+          - /opt/vehicle/scripts/mapping/start_vehicle2_mapping.sh
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: vehicle-inventory
+            mountPath: /opt/vehicle/runtime-config
+            readOnly: true
+          - name: vehicle-autodrive-root
+            mountPath: /home/nvidia/AutoDrive
+          - name: vehicle-mapping-root
+            mountPath: /home/nvidia/mapping
+          - name: vehicle-dev
+            mountPath: /dev
+      nodeSelector:
+        perception.vehicle.id: vehicle2
+      tolerations:
+        - key: perception.role
+          operator: Equal
+          value: vehicle
+          effect: NoSchedule
+
+    - name: verify-vehicle1
+      podSpecPatch: |
+        hostPID: true
+        hostNetwork: true
+      container:
+        image: vehicle-mapping-runner:latest
+        imagePullPolicy: IfNotPresent
+        workingDir: /opt/vehicle
+        env:
+          - name: VEHICLE_INVENTORY_FILE
+            value: /opt/vehicle/runtime-config/vehicle_hosts.env
+          - name: VEHICLE_EXECUTION_MODE
+            value: pod
+        command: ["bash", "-lc"]
+        args:
+          - /opt/vehicle/scripts/mapping/verify_vehicle1_mapping.sh
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: vehicle-inventory
+            mountPath: /opt/vehicle/runtime-config
+            readOnly: true
+          - name: vehicle-autodrive-root
+            mountPath: /home/nvidia/AutoDrive
+          - name: vehicle-mapping-root
+            mountPath: /home/nvidia/mapping
+          - name: vehicle-dev
+            mountPath: /dev
+      nodeSelector:
+        perception.vehicle.id: vehicle1
+      tolerations:
+        - key: perception.role
+          operator: Equal
+          value: vehicle
+          effect: NoSchedule
+
+    - name: verify-vehicle2
+      podSpecPatch: |
+        hostPID: true
+        hostNetwork: true
+      container:
+        image: vehicle-mapping-runner:latest
+        imagePullPolicy: IfNotPresent
+        workingDir: /opt/vehicle
+        env:
+          - name: VEHICLE_INVENTORY_FILE
+            value: /opt/vehicle/runtime-config/vehicle_hosts.env
+          - name: VEHICLE_EXECUTION_MODE
+            value: pod
+        command: ["bash", "-lc"]
+        args:
+          - /opt/vehicle/scripts/mapping/verify_vehicle2_mapping.sh
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: vehicle-inventory
+            mountPath: /opt/vehicle/runtime-config
+            readOnly: true
+          - name: vehicle-autodrive-root
+            mountPath: /home/nvidia/AutoDrive
+          - name: vehicle-mapping-root
+            mountPath: /home/nvidia/mapping
+          - name: vehicle-dev
+            mountPath: /dev
+      nodeSelector:
+        perception.vehicle.id: vehicle2
+      tolerations:
+        - key: perception.role
+          operator: Equal
+          value: vehicle
+          effect: NoSchedule

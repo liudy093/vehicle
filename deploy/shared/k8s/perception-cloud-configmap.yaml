@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: perception-cloud-config
+  namespace: perception
+  labels:
+    app.kubernetes.io/name: perception-cloud
+    app.kubernetes.io/part-of: perception-cloud
+data:
+  SERVER_HOST: "0.0.0.0"
+  SERVER_PORT: "15000"
+  WEB_VIEWER_PORT: "18080"
+  WEB_VIEWER_TOPIC: "/vehicle1/cloud_sent/forward"
+  WEB_VIEWER_TOPICS: "vehicle1/fused=/vehicle1/cloud_sent/fused,vehicle1/global_cloud=/vehicle1/global_cloud,vehicle2/fused=/vehicle2/cloud_sent/fused,vehicle2/global_cloud=/vehicle2/global_cloud,global/global_map=/global_map,global/global_map_optimized=/global_map_optimized"
+  WEB_VIEWER_MAX_POINTS: "20000"
+  FUSED_CLOUD_TOPIC_NAME: "fused"
+  FUSED_LIDAR_IDS: "forward,left,right"
+  FUSED_LIDAR_EXTRINSICS: "forward:0.0,0.0,0.0,0;left:-0.8,-0.6,0.0,90;right:0.8,-0.6,0.0,-90"
+  GLOBAL_MAP_EXPORT_DIR: "/tmp/perception_maps"
+  GLOBAL_MAP_EXPORT_PREFIX: "global_map"
+  GLOBAL_MAP_LEAF_SIZE: "0.15"
+  GLOBAL_FRAME_LEAF_SIZE: "0.1"
+  ROS_MASTER_URI: "http://127.0.0.1:11311"
+  ROS_HOSTNAME: "127.0.0.1"

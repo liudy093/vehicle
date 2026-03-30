@@ -1,0 +1,26 @@
+# Imported-tree junk and heavyweight local artifacts.
+**/.xdp_*
+src/local_path_planning/local_path_planning/data_logs/
+src/pid/test/pid_data_*.xlsx
+src/pid/data/*.csv
+src/pid/pid/baocuo.txt
+src/pid/pid/new/*.pdf
+src/lane_recognition/lane_recognition/detectLane/inference/
+src/position/position/**/*.xlsx
+src/camera_detect/camera_detect/yolov8_sort/img/
+src/camera_ori/tools_camera/picture/
+src/camera_ori/tools_camera/picture1/
+src/camera_ori/tools_camera/chessboard.png
+src/camera_ori/tools_camera/camera_parameters.xlsx
+src/sign_recognition/sign_recognition/detectSign/ok.jpg
+src/rslidar_sdk/src/rs_driver/cmake/rs_driverConfig.cmake
+**/* copy*
+**/*(copy)*
+**/*(another copy)*
+**/*复件*
+**/* *.py
+**/*_old.py
+**/*.pt
+**/*.pth
+**/*.onnx.cache
+**/*.so

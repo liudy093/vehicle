@@ -1,0 +1,43 @@
+{
+    "lateral": {
+                "ephi": {
+                                   "v3.5": 1.0,
+                                   "v5.5": 0.9,
+                                   "v7.5": 0.5,
+                                   "other": 0.5
+                                  },
+                                  
+                "ed": {
+                                   "v3.5": 0.1,
+                                   "v5.5": 0.09,
+                                   "v7.5": 0.05,
+                                   "other": 0.05
+                                  }
+            },
+    "longitudinal": {
+                "accPID_plain": {
+                                   "kp": 0.2,
+                                   "ki": 0.005,
+                                   "kd": 0
+                                  },
+                "accPID_slope": {
+                                   "kp": 0.5,
+                                   "ki": 0.01,
+                                   "kd": 0
+                                  },
+                "decPID": {
+                                   "kp": 15,
+                                   "ki": 0,
+                                   "kd": 0
+                                  },
+                "dec_open_loop":15,
+                "dec_open_loop_start":0
+            },
+     "advanceDistance": {
+                                   "v3.5": 6,
+                                   "v5.5": 10,
+                                   "v7.5": 15,
+                                   "other": 20
+                                  }
+   
+}

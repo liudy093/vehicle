@@ -1,0 +1,35 @@
+lateral_ephi_1: 1.4                         #车速0-3.5时，航向角误差反馈增益
+lateral_ephi_2: 1.0                         #车速3.5-5.5时，航向角误差反馈增益
+lateral_ephi_3: 0.5                         #车速5.5-7.5时，航向角误差反馈增益
+lateral_ephi_4: 0.5                         #车速7.5以上时，航向角误差反馈增益
+
+
+lateral_ed_1: 0.115                           #车速0-3.5时，横向偏移反馈增益
+lateral_ed_2: 0.09                          #车速3.5-5.5时，横向偏移反馈增益
+lateral_ed_3: 0.05                          #车速5.5-7.5时，横向偏移反馈增益
+lateral_ed_4: 0.05                          #车速7.5以上时，横向偏移反馈增益
+
+
+longitudinal_acc_plain_kp: 0.25              #平路加速PID参数
+longitudinal_acc_plain_ki: 0.005
+longitudinal_acc_plain_kd: 0
+
+
+longitudinal_acc_slope_kp: 0.5              #斜坡加速PID参数
+longitudinal_acc_slope_ki: 0.01
+longitudinal_acc_slope_kd: 0
+
+
+longitudinal_dec_kp: 15                     #刹车PID参数
+longitudinal_dec_ki: 0
+longitudinal_dec_kd: 0
+
+
+longitudinal_dec_open_loop: 15              #停车开环控制增益，越大刹车距离越短，刹车越剧烈
+longitudinal_dec_open_loop_start: 0         #停车开环控制初始值，越大反应越剧烈
+
+
+advance_distance_1: 5                       #车速0-3.5时，预瞄距离
+advance_distance_2: 10                      #车速3.5-5.5时，预瞄距离
+advance_distance_3: 15                      #车速5.5-7.5时，预瞄距离
+advance_distance_4: 20                      #车速7.5以上时，预瞄距离

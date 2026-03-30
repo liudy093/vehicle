@@ -1,0 +1,83 @@
+{
+   "orin_image" : {
+        "__comment1__" : "可选 0, 1, 2。为0时使用视频进行测试;为1时使用usb相机;为2时使用网口相机",
+        "flag" : 1,
+        "__comment2__" : "当使用 usb 相机时候, dev 名称",
+        "usb_dev" : "/dev/video7",
+        "__comment3__" : "是否将相机保存为视频",
+        "is_out_video" : true,
+        "out_video_path" : "/home/nvidia/SsdDisk/crone_video/",
+        "test_video_path" : "/media/wyz/yzwang/WIDC2024/锥桶数据集/第二次制作的锥桶防撞桶数据集/锥桶视频/3car/157-10-13-50.mp4",
+        "image_size" : [640, 640],
+        "__comment4__" : "只有 usb 相机才能用如下方式改变 fps",
+        "image_fps" : 30
+    },
+    "detect_config" : {
+        "__comment1__" : "这里两个是相对于yolov8_sort文件夹的路径",
+        "model_path"        : "weights/best_epoch_weights.pth",
+        "classes_path"      : "/home/nvidia/AutoDrive/src/camera_detect/camera_detect/yolov8_sort/model_data/bdd100k_classes.txt",
+        "input_shape"       : [640, 640],
+        "phi"               : "s",
+        "model_fuse"        : true,
+        "confidence"        : 0.3,
+        "nms_iou"           : 0.3,
+        "enable_detect"     : true,
+        "enable_track"      : true,
+        "enable_vis"        : true,
+        "letterbox_image"   : false,
+        "cuda"              : true,
+        "sort_max_age"      : 30,
+        "sort_min_hits"     : 4,
+        "sort_iou_thresh"   : 0.2
+    },
+    "camera_param":{
+        "camera_height": 1.73,
+        "camera_angle": 5.20,
+        "intrinsic_matrix": [
+            [
+                389.1934,
+                0.0,
+                323.4982
+            ],
+            [
+                0.0,
+                689.1014,
+                164.30560000000003
+            ],
+            [
+                0.0,
+                0.0,
+                1.0
+            ]
+        ],
+        "distortion_cofficients": [
+            [
+                -0.3871452297476399,
+                0.1694044650237078,
+                0.0018522410853775593,
+                0.0007502011811405637,
+                -0.03802346597389925
+            ]
+        ],
+        "forward_lidar_to_camera":[
+            [
+                -0.02617296143185483,
+                -0.9995052810395874,
+                -0.017440449072839988,
+                0.15
+            ],
+            [
+                -0.00045685074115676077,
+                0.017458383297924773,
+                -0.9998474864398186,
+                1.5
+            ],
+            [
+                0.9996573249755573,
+                -0.026161002018241335,
+                -0.0009135623211521556,
+                1.8000000000000005
+            ]
+        ]
+    }
+}

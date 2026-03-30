@@ -1,0 +1,10 @@
+allow_change_line: 0                  #是否允许绕行，1为允许,
+change_distance: 1.5                   #绕行距离,
+need_change_line_distance: 0.6        #安全距离右侧向左距离范围内有障碍物，则需要转向,
+lateral_safe_distance: 1.35            #车左右安全距离,
+ACC_speed_max: 3                      #最大跟车速度,
+ACC_speed_min: 1                      #最小跟车速度,
+change_line_speed: 2                  #绕行速度
+keep_change_line: 0                   #换道后是否保持，1为保持，即不换回原车道
+max_platoon_speed: 4                  #编队行驶最大速度
+safe_platoon_distance: 20             #编队行驶最大距离

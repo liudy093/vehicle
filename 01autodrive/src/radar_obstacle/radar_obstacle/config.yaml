@@ -1,0 +1,15 @@
+DESCRIBE: " 毫米波雷达配置文件 "
+
+WITCH_RADAR: 1   # 使用哪一种激光雷达 0 为德尔福，1 为德国大陆
+
+TRACK:
+    MIN_HITS: 2  # 连续匹配到n帧才保留数据
+    MAX_AGE: 3  # 连续失去匹配n帧删除数据
+    MAX_MATE_DIS: 10  # 最远匹配距离
+    ED_THRESHOLD: 0.0  # 匹配阈值
+
+RADAR:
+    MAX_RADAR_DIS: 30  # 只保留此半径内的毫米波检测结果
+    DX: 0 # 坐标转换 dx
+    DY: 0 # 坐标转换 dy
+    RY: 0 # 坐标转换 rotate

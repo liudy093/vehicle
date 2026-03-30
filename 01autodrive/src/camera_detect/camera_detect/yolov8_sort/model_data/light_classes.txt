@@ -1,0 +1,4 @@
+green traffic
+red traffic
+yellow traffic
+none traffic

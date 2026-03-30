@@ -1,0 +1,32 @@
+# 横向控制参数
+
+## 前进
+lateral_ephi_forward: 1.1                   #前向航向角误差反馈增益
+lateral_ed_forward: 0.115                   #前向横向偏移反馈增益
+
+## 倒车
+lateral_ephi_reverse: 8                 #倒车航向角误差反馈增益
+lateral_ed_reverse: 0.58                   #倒车横向偏移反馈增益
+
+
+# 纵向控制参数
+longitudinal_acc_plain_kp: 0.08              #平路加速PID参数
+longitudinal_acc_plain_ki: 0
+longitudinal_acc_plain_kd: 0
+
+
+longitudinal_acc_slope_kp: 0.08              #斜坡加速PID参数
+longitudinal_acc_slope_ki: 0
+longitudinal_acc_slope_kd: 0
+
+
+longitudinal_dec_kp: 18                     #刹车PID参数
+longitudinal_dec_ki: 0
+longitudinal_dec_kd: 0
+
+
+longitudinal_dec_open_loop: 15              #停车开环控制增益，越大刹车距离越短，刹车越剧烈
+longitudinal_dec_open_loop_start: 0         #停车开环控制初始值，越大反应越剧烈
+
+
+advance_distance: 2                       #预瞄距离

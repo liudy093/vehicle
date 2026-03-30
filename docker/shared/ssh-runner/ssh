@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+set -eu
+
+if [ -n "${SSH_PASSWORD:-}" ]; then
+  exec sshpass -p "${SSH_PASSWORD}" /usr/bin/ssh \
+    -o PubkeyAuthentication=no \
+    -o PreferredAuthentications=password \
+    "$@"
+fi
+
+exec /usr/bin/ssh "$@"

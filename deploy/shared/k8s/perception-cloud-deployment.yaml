@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: perception-cloud
+  namespace: perception
+  labels:
+    app.kubernetes.io/name: perception-cloud
+    app.kubernetes.io/part-of: perception-cloud
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: perception-cloud
+  template:
+    metadata:
+      labels:
+        app: perception-cloud
+        app.kubernetes.io/name: perception-cloud
+        app.kubernetes.io/part-of: perception-cloud
+    spec:
+      nodeSelector:
+        perception.role: general
+      volumes:
+        - name: perception-maps
+          emptyDir: {}
+      containers:
+        - name: perception-cloud
+          image: vehicle-cloud:amd64
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: ingest
+              containerPort: 15000
+            - name: viewer
+              containerPort: 18080
+          envFrom:
+            - configMapRef:
+                name: perception-cloud-config
+          volumeMounts:
+            - name: perception-maps
+              mountPath: /tmp/perception_maps
+          readinessProbe:
+            httpGet:
+              path: /api/cloud
+              port: viewer
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/cloud
+              port: viewer
+            initialDelaySeconds: 60
+            periodSeconds: 20

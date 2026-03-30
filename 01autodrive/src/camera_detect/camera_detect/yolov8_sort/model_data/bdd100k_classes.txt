@@ -1,0 +1,9 @@
+car
+bus
+person
+bike
+rider
+truck
+green traffic
+red traffic
+yellow traffic

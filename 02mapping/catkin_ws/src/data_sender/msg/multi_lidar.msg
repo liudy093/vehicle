@@ -1,0 +1,5 @@
+string vehicle_id
+sensor_msgs/PointCloud2 cloud
+std_msgs/Float64MultiArray sc
+std_msgs/Float64MultiArray ring_key
+std_msgs/Float64MultiArray sector_key

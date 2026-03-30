@@ -1,0 +1,267 @@
+"""
+Author: chen fang
+CreateTime: 2023/5/23 下午1:10
+File: lidar_obstacle.py
+Description: 
+"""
+
+import sys
+import os
+import rclpy
+from rclpy.node import Node
+from car_interfaces.msg import *
+
+from std_msgs.msg import String,Bool
+
+
+
+ros_node_name = "lidar_obstacle"
+sys.path.append(os.getcwd() + "/src/utils/")
+sys.path.append(os.getcwd() + "/src/%s/%s/" % (ros_node_name, ros_node_name))
+
+ros_path = '/opt/ros/foxy/lib/python3.8/site-packages'
+msg_path = os.getcwd() + '/install/car_interfaces/lib/python3.8/site-packages'
+obstacle_path = os.getcwd() + '/src/lidar_obstacle/lidar_obstacle'
+
+sys.path.append(ros_path)
+sys.path.append(msg_path)
+sys.path.append(obstacle_path)
+sys.path.append("..")
+
+import time
+import yaml
+from easydict import EasyDict
+import numpy as np
+import array
+import pcl
+import ros2_numpy as rnp
+from points_processing_cpp import points_processing_cpp
+
+from sensor_msgs.msg import PointCloud2
+from sensor_msgs.msg import PointField
+from nav_msgs.msg import GridCells
+from geometry_msgs.msg import Point
+from visualization_msgs.msg import Marker, MarkerArray
+
+
+class LidarObstacle(Node):
+    def __init__(self, name):
+        super().__init__(name)
+        # ======================================================== #
+        # 从config文件中读取超参数
+        root_path = os.getcwd() + '/src/lidar_obstacle/lidar_obstacle/'  # 根目录
+        yaml_file = root_path + 'config.yaml'
+        f = open(yaml_file)
+        config = yaml.load(f, Loader=yaml.FullLoader)
+        self.config = EasyDict(config)
+
+        # ======================================================== #
+        # 初始化点云处理类
+        self.func = points_processing_cpp(self.config)
+
+        # ======================================================== #
+        # 订阅器
+        self.subLidarOri_rslidar = self.create_subscription(PointCloud2, '/forward/rslidar_points',
+                                                            self.sub_callback_lidar_rslidar, 10)
+
+
+        # ======================================================== #
+        # 发布器
+        # 障碍物数据
+        self.pubLidarObstacle = self.create_publisher(LidarObstacleInterface, 'lidar_obstacle_data', 10)
+        
+        
+        
+        # 监听器
+        # ======================================================== #
+        self.PubForwardLidarState = self.create_publisher(Bool, 'ForwardLidarState', 10)
+        self.forward_msg_recieve_flag = False  # 默认状态错误，需要在代码中不断的改为正确
+        self.timerRidarOri = self.create_timer(1, self.ForwardLidarState_monitor)
+        # ======================================================== #
+        
+        
+        
+        
+        # grid可视化
+        if self.config.vis_publisher.obstacle_grid:
+            self.obstacle_grid = self.create_publisher(GridCells, 'obstacle_grid', 10)
+
+
+    def ForwardLidarState_monitor(self):
+        """
+        毫米波状态监听器
+        """
+        msg = Bool()
+        if self.forward_msg_recieve_flag  == True:
+            msg.data = True
+            self.PubForwardLidarState.publish(msg)
+            self.forward_msg_recieve_flag = False
+        else:
+            print('--------------------ForwardLidarState_error-----------------------')
+            self.forward_msg_recieve_flag = False
+            msg.data = False
+            self.PubForwardLidarState.publish(msg)
+
+
+    # 点云的回调函数
+    def sub_callback_lidar_rslidar(self, LidarOriInterface):
+        all_start = time.time()
+        print("------------- forward lidar -----------------")
+        ##############################################################
+        # 点云格式转换并裁剪
+        start = time.time()
+        point_cloud_pcl = self.ros_to_numpy_to_pcl(LidarOriInterface)
+        end = time.time()
+        print("ros_to_numpy_to_pcl time:", end - start)
+
+        ##############################################################
+        # 点云处理
+        start = time.time()
+
+        self.config.obstacle.h_extr = 0.15
+        self.config.obstacle.min_up_mean_points_num_10m = 8
+        self.config.obstacle.min_up_mean_points_num_20m = 1
+        self.config.obstacle.min_up_mean_points_num_30m = 1
+        self.config.obstacle.min_up_mean_points_num_100m = 2
+
+        obstacle_list = self.func.run(point_cloud_pcl)
+        end = time.time()
+        print("points_processing time:", end - start)
+
+        ##############################################################
+        # 障碍物数据装载及发布
+        start = time.time()
+        self.publish_lidar_obstacle(obstacle_list)
+        end = time.time()
+        print("publish_lidar_obstacle time:", end - start)
+
+        ##############################################################
+        # grid可视化
+        if self.config.vis_publisher.obstacle_grid:
+            start = time.time()
+            self.publish_lidar_obstacle_grid(obstacle_list)
+            end = time.time()
+            print("publish_lidar_obstacle_grid time:", end - start)
+        all_end = time.time()
+        print("all time: ", all_end - all_start, "hz:", 1 / (all_end - all_start))
+        print("################################################")
+
+    def timer_callback(self):
+        pass
+
+
+    def ros_to_numpy_to_pcl(self, ros_cloud):
+        # ros_points -> numpy
+        data = rnp.numpify(ros_cloud)
+        data = rnp.point_cloud2.get_xyzi_points(data)
+        data = data.astype(np.float32)
+
+        print('point_cloud num: ', data.shape[0])
+
+        # 点云裁剪
+        start = time.time()
+        mask = (data[:, 0] >= self.config.obstacle.range[0]) & (data[:, 0] <= self.config.obstacle.range[3]) \
+               & (data[:, 1] >= self.config.obstacle.range[1]) & (data[:, 1] <= self.config.obstacle.range[4]) \
+               & (data[:, 2] >= self.config.obstacle.range[2]) & (data[:, 2] <= self.config.obstacle.range[5])
+        data = data[mask]
+
+        # 去掉前10m以内过高的点云
+        mask = (data[:, 0] >= 0) & (data[:, 0] <= 10) \
+               & (data[:, 1] >= self.config.obstacle.range[1]) & (data[:, 1] <= self.config.obstacle.range[4]) \
+               & (data[:, 2] >= -0.1) & (data[:, 2] <= self.config.obstacle.range[5])
+        data = data[~mask]
+
+        end = time.time()
+        print("point_cloud_crop time:", end - start)
+
+        # numpy -> pcl
+        pcl_data = pcl.PointCloud_PointXYZI()
+        pcl_data.from_array(data)
+
+        return pcl_data
+
+    def publish_lidar_obstacle(self, obstacle_np):
+        msgLidarObstacle = LidarObstacleInterface()
+        msgLidarObstacle.timestamp = time.time()
+        msgLidarObstacle.id = 0
+        msgLidarObstacle.number = len(obstacle_np)
+        msgLidarObstacle.process_time = 0.0
+
+        obstacle_msg_np = np.zeros((len(obstacle_np), 9))
+        obstacle_msg_np[:, 1] = 0.5
+        obstacle_msg_np[:, 2] = 0.5
+        obstacle_msg_np[:, 3] = obstacle_np[:, 2]
+        obstacle_msg_np[:, 4] = -obstacle_np[:, 1]
+        obstacle_msg_np[:, 5] = obstacle_np[:, 0]
+        obstacle_msg_np[:, 6] = obstacle_np[:, 2]
+        obstacle_msg_np = obstacle_msg_np.flatten().astype(np.float32)
+        msgLidarObstacle.obstacledata = array.array('f', obstacle_msg_np)
+
+        self.pubLidarObstacle.publish(msgLidarObstacle)
+        
+        # state monitor
+        # ======================================================== #
+        self.forward_msg_recieve_flag = True
+        msg = Bool()
+        msg.data = True
+        self.PubForwardLidarState.publish(msg)
+        # ======================================================== #
+        
+
+        pass
+
+    def publish_lidar_point_cloud(self, point_cloud, publisher):
+        msg = PointCloud2()
+        msg.header.stamp = rclpy.time.Time().to_msg()
+        msg.header.frame_id = "rslidar"
+        if len(point_cloud.shape) == 3:
+            msg.height = point_cloud.shape[1]
+            msg.width = point_cloud.shape[0]
+        else:
+            msg.height = 1
+            msg.width = len(point_cloud)
+        msg.fields = [
+            PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1),
+            PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
+            PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1),
+            PointField(name='intensity', offset=12, datatype=PointField.FLOAT32, count=1)]
+        msg.is_bigendian = False
+        msg.point_step = 16
+        msg.row_step = msg.point_step * point_cloud.shape[0]
+        msg.is_dense = False
+        msg.data = np.asarray(point_cloud, np.float32).tostring()
+
+        publisher.publish(msg)
+
+    def publish_lidar_obstacle_grid(self, obstacle_list):
+        cells = GridCells()
+        cells.header.frame_id = "rslidar"
+        cells.cell_width = 0.5  # edit for grid size .3 for simple map
+        cells.cell_height = 0.5  # edit for grid size
+        for i in range(len(obstacle_list)):
+            point = Point()
+            point.x = float(obstacle_list[i, 0])
+            point.y = float(obstacle_list[i, 1])
+            point.z = float(obstacle_list[i, 2])
+            cells.cells.append(point)
+        self.obstacle_grid.publish(cells)
+
+    def plannerVis_callback(self, msg):
+        """
+        存入可视化信息
+        """
+        self.plannerVis = msg
+
+
+def main():
+    rclpy.init()
+    rosNode = LidarObstacle(name='lidar_obstacle')
+    rclpy.spin(rosNode)
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    rclpy.init()
+    rosNode = LidarObstacle(name='lidar_obstacle')
+    rclpy.spin(rosNode)
+    rclpy.shutdown()

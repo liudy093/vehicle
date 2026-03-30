@@ -1,0 +1,35 @@
+common:
+    lid_topic:  "/forward/rslidar_points"
+    imu_topic:  "/imu"
+    time_sync_en: false
+    time_offset_lidar_to_imu: 0.0
+
+preprocess:
+    lidar_type: 2                # Reuse the VELO16 PointCloud2 path for Helios 16.
+    scan_line: 16
+    scan_rate: 10
+    timestamp_unit: 2            # If PointCloud2 has no "time" field, FAST-LIO falls back to yaw-based timing.
+    blind: 1.0
+
+mapping:
+    acc_cov: 0.1
+    gyr_cov: 0.1
+    b_acc_cov: 0.0001
+    b_gyr_cov: 0.0001
+    fov_degree:    180
+    det_range:     120.0
+    extrinsic_est_en:  true
+    extrinsic_T: [ 0.0, 0.0, 0.0 ]
+    extrinsic_R: [ 1, 0, 0,
+                   0, 1, 0,
+                   0, 0, 1 ]
+
+publish:
+    path_en:  false
+    scan_publish_en:  true
+    dense_publish_en: true
+    scan_bodyframe_pub_en: true
+
+pcd_save:
+    pcd_save_en: false
+    interval: -1

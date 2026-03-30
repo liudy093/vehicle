@@ -1,0 +1,27 @@
+<launch>
+    <node pkg="data_listener2" type="test_pcl.py" name="" output="screen">
+        <param name="num_points" value="1000" /> 
+        <param name="min_radius" value="0.5" />
+        <param name="max_radius" value="5.0" />
+        <param name="start_angle_deg" value="-60.0" />
+        <param name="end_angle_deg" value="60.0" />
+        <param name="min_height" value="-1.0" />
+        <param name="max_height" value="1.0" />
+        <param name="publish_rate" value="2" />
+        <param name="frame_id" value="vehicle1" />
+        <param name="pub_name" value="cloud_registered" />
+    </node>
+
+    <!-- <node pkg="data_listener2" type="test_pcl.py" name="" output="screen">
+        <param name="num_points" value="1000" /> 
+        <param name="min_radius" value="2.0" />
+        <param name="max_radius" value="8.0" />
+        <param name="start_angle_deg" value="-30.0" />
+        <param name="end_angle_deg" value="30.0" />
+        <param name="min_height" value="-1.0" />
+        <param name="max_height" value="1.0" />
+        <param name="publish_rate" value="2" />
+        <param name="frame_id" value="vehicle2" />
+        <param name="pub_name" value="fan_pointcloud_v2" />
+    </node> -->
+</launch>

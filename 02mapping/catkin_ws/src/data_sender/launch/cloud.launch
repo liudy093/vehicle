@@ -1,0 +1,34 @@
+<launch>
+  <arg name="server_host" default="0.0.0.0" />
+  <arg name="server_port" default="5000" />
+  <arg name="pcl_pub_name" default="cloud_sent" />
+  <arg name="frame_id" default="map" />
+  <arg name="global_map_export_dir" default="/tmp/perception_maps" />
+  <arg name="global_map_export_prefix" default="global_map" />
+
+  <node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
+
+    <!-- resolution in meters per pixel -->
+    <param name="resolution" value="0.10" />
+    <!-- name of the fixed frame, needs to be "/map" for SLAM -->
+    <!-- 
+         增量式构建地图时，需要提供输入的点云帧和静态全局帧之间的 TF 变换
+    -->
+    <param name="frame_id" type="string" value="$(arg frame_id)" />
+
+    <param name = "height_map" value = "true"/>
+    <param name = "colored_map" value = "false"/>
+    <param name = "sensor_model/max_range" value = "1000.0"/>
+    <!-- topic from where pointcloud2 messages are subscribed -->
+    <!-- 要订阅的是 cloud_recv 发布的接收点云 -->
+    <remap from="/cloud_in" to="/$(arg pcl_pub_name)" />
+  </node>
+
+  <node pkg="data_listener2" type="cloud_recv" name="cloud_recv" output="screen">
+    <param name="server_host" type="string" value="$(arg server_host)" />
+    <param name="server_port" type="int" value="$(arg server_port)" />
+    <param name="pcl_pub_name" type="string" value="$(arg pcl_pub_name)" />
+    <param name="global_map_export_dir" type="string" value="$(arg global_map_export_dir)" />
+    <param name="global_map_export_prefix" type="string" value="$(arg global_map_export_prefix)" />
+  </node>
+</launch>

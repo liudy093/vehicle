@@ -1,0 +1,11 @@
+map_path: 'map/00.json' # 地图的路径
+parking_point_x:  -0.5113770228627871  # 停车点的x坐标
+parking_point_y: 11.05712328825336  # 停车点的y坐标
+parking_point_yaw: 269.39 # 停车点的yaw角（单位：度）
+rs_track_cls: 0 # rs路径的类型(0 or 1)
+rs_track_step: 0.5 # rs路径的步长（单位：米）
+parking_speed_1: 1.0 # 靠近泊车点的速度
+parking_speed_2: -0.2 # 倒车的速度
+forward_dis: 5 # 超越泊车点多少米开始倒车
+vis: Ture # 是否开可视化
+
