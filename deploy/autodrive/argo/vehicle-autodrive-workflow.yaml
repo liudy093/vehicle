@@ -1,0 +1,92 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: vehicle-autodrive-
+  namespace: argo
+spec:
+  serviceAccountName: argo
+  entrypoint: vehicle-autodrive
+  arguments:
+    parameters:
+      - name: target_vehicle
+        value: ${TARGET_VEHICLE}
+  podGC:
+    strategy: OnWorkflowSuccess
+  ttlStrategy:
+    secondsAfterCompletion: 600
+  volumes:
+    - name: vehicle-autodrive-root
+      hostPath:
+        path: /home/nvidia/AutoDrive
+        type: Directory
+    - name: vehicle-dev
+      hostPath:
+        path: /dev
+        type: Directory
+  templates:
+    - name: vehicle-autodrive
+      dag:
+        tasks:
+          - name: stop-autodrive
+            template: stop-autodrive
+          - name: run-autodrive
+            dependencies: ["stop-autodrive"]
+            template: run-autodrive
+
+    - name: stop-autodrive
+      podSpecPatch: |
+        hostPID: true
+        hostNetwork: true
+      container:
+        image: ${AUTODRIVE_RUNNER_IMAGE}
+        imagePullPolicy: IfNotPresent
+        workingDir: /opt/vehicle
+        env:
+          - name: VEHICLE_EXECUTION_MODE
+            value: pod
+        command: ["bash", "-lc"]
+        args:
+          - /opt/vehicle/scripts/autodrive/stop_vehicle_autodrive.sh {{workflow.parameters.target_vehicle}}
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: vehicle-autodrive-root
+            mountPath: /home/nvidia/AutoDrive
+          - name: vehicle-dev
+            mountPath: /dev
+      nodeSelector:
+        perception.vehicle.id: "{{workflow.parameters.target_vehicle}}"
+      tolerations:
+        - key: perception.role
+          operator: Equal
+          value: vehicle
+          effect: NoSchedule
+
+    - name: run-autodrive
+      podSpecPatch: |
+        hostPID: true
+        hostNetwork: true
+      container:
+        image: ${AUTODRIVE_RUNNER_IMAGE}
+        imagePullPolicy: IfNotPresent
+        workingDir: /opt/vehicle
+        env:
+          - name: VEHICLE_EXECUTION_MODE
+            value: pod
+        command: ["bash", "-lc"]
+        args:
+          - /opt/vehicle/scripts/autodrive/start_vehicle_autodrive.sh {{workflow.parameters.target_vehicle}}
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: vehicle-autodrive-root
+            mountPath: /home/nvidia/AutoDrive
+          - name: vehicle-dev
+            mountPath: /dev
+      nodeSelector:
+        perception.vehicle.id: "{{workflow.parameters.target_vehicle}}"
+      tolerations:
+        - key: perception.role
+          operator: Equal
+          value: vehicle
+          effect: NoSchedule
