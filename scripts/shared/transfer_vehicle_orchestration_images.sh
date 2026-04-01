@@ -6,6 +6,7 @@ export KUBECONFIG=/tmp/perception.k3s.yaml
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
 source "${SCRIPT_DIR}/vehicle_inventory.sh"
+IMAGE_PROFILE="${IMAGE_PROFILE:-all}"
 WORKER_HOSTS="${WORKER_HOSTS:-root@172.16.2.81 root@172.16.2.82 root@172.16.2.83}"
 VEHICLE_HOSTS="${VEHICLE_HOSTS:-$(vehicle_inventory_host "vehicle1" "nvidia") $(vehicle_inventory_host "vehicle2" "nvidia")}"
 VEHICLE_SUDO_PASSWORD="${VEHICLE_SUDO_PASSWORD:-nvidia}"
@@ -27,6 +28,7 @@ Usage:
   ./scripts/shared/transfer_vehicle_orchestration_images.sh
 
 Environment variables:
+  IMAGE_PROFILE             Default: ${IMAGE_PROFILE} (all, autodrive, or mapping)
   WORKER_HOSTS               Default: ${WORKER_HOSTS}
   VEHICLE_HOSTS              Default: ${VEHICLE_HOSTS}
   VEHICLE_SUDO_PASSWORD      Default: ${VEHICLE_SUDO_PASSWORD}
@@ -48,6 +50,49 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   exit 0
 fi
 
+case "${IMAGE_PROFILE}" in
+  all|autodrive|mapping)
+    ;;
+  *)
+    echo "IMAGE_PROFILE must be one of: all, autodrive, mapping" >&2
+    usage >&2
+    exit 1
+    ;;
+esac
+
+needs_worker_cloud=false
+needs_worker_ssh_runner=false
+needs_worker_argoexec=false
+needs_vehicle_runner=false
+needs_vehicle_mapping_runner=false
+needs_vehicle_argoexec=false
+needs_vehicle_pause=false
+
+case "${IMAGE_PROFILE}" in
+  all)
+    needs_worker_cloud=true
+    needs_worker_ssh_runner=true
+    needs_worker_argoexec=true
+    needs_vehicle_runner=true
+    needs_vehicle_mapping_runner=true
+    needs_vehicle_argoexec=true
+    needs_vehicle_pause=true
+    ;;
+  autodrive)
+    needs_vehicle_runner=true
+    needs_vehicle_argoexec=true
+    needs_vehicle_pause=true
+    ;;
+  mapping)
+    needs_worker_cloud=true
+    needs_worker_ssh_runner=true
+    needs_worker_argoexec=true
+    needs_vehicle_mapping_runner=true
+    needs_vehicle_argoexec=true
+    needs_vehicle_pause=true
+    ;;
+esac
+
 while IFS= read -r opt; do
   SSH_OPTS+=("${opt}")
 done < <(build_ssh_opts "${SSH_IDENTITY_FILE}")
@@ -56,7 +101,27 @@ for cmd in scp ssh python3; do
   require_cmd "${cmd}"
 done
 
-for image_tar in "${VEHICLE_CLOUD_IMAGE_TAR}" "${SSH_RUNNER_IMAGE_TAR}" "${VEHICLE_RUNNER_IMAGE_TAR}" "${VEHICLE_MAPPING_RUNNER_IMAGE_TAR}" "${VEHICLE_ARGOEXEC_IMAGE_TAR}" "${VEHICLE_PAUSE_IMAGE_TAR}"; do
+required_image_tars=()
+if [[ "${needs_worker_cloud}" == "true" ]]; then
+  required_image_tars+=("${VEHICLE_CLOUD_IMAGE_TAR}")
+fi
+if [[ "${needs_worker_ssh_runner}" == "true" ]]; then
+  required_image_tars+=("${SSH_RUNNER_IMAGE_TAR}")
+fi
+if [[ "${needs_vehicle_runner}" == "true" ]]; then
+  required_image_tars+=("${VEHICLE_RUNNER_IMAGE_TAR}")
+fi
+if [[ "${needs_vehicle_mapping_runner}" == "true" ]]; then
+  required_image_tars+=("${VEHICLE_MAPPING_RUNNER_IMAGE_TAR}")
+fi
+if [[ "${needs_vehicle_argoexec}" == "true" ]]; then
+  required_image_tars+=("${VEHICLE_ARGOEXEC_IMAGE_TAR}")
+fi
+if [[ "${needs_vehicle_pause}" == "true" ]]; then
+  required_image_tars+=("${VEHICLE_PAUSE_IMAGE_TAR}")
+fi
+
+for image_tar in "${required_image_tars[@]}"; do
   if [[ ! -f "${image_tar}" ]]; then
     echo "Image tar not found: ${image_tar}" >&2
     exit 1
@@ -64,27 +129,36 @@ for image_tar in "${VEHICLE_CLOUD_IMAGE_TAR}" "${SSH_RUNNER_IMAGE_TAR}" "${VEHIC
 done
 
 has_local_argoexec_tar=false
-if [[ -f "${ARGOEXEC_IMAGE_TAR}" ]]; then
+if [[ "${needs_worker_argoexec}" == "true" && -f "${ARGOEXEC_IMAGE_TAR}" ]]; then
   has_local_argoexec_tar=true
 fi
 
 if command -v sha256sum >/dev/null 2>&1; then
-  cloud_hash="$(sha256sum "${VEHICLE_CLOUD_IMAGE_TAR}" | awk '{print $1}')"
-  runner_hash="$(sha256sum "${SSH_RUNNER_IMAGE_TAR}" | awk '{print $1}')"
-  vehicle_runner_hash="$(sha256sum "${VEHICLE_RUNNER_IMAGE_TAR}" | awk '{print $1}')"
-  vehicle_mapping_runner_hash="$(sha256sum "${VEHICLE_MAPPING_RUNNER_IMAGE_TAR}" | awk '{print $1}')"
-  vehicle_argoexec_hash="$(sha256sum "${VEHICLE_ARGOEXEC_IMAGE_TAR}" | awk '{print $1}')"
-  vehicle_pause_hash="$(sha256sum "${VEHICLE_PAUSE_IMAGE_TAR}" | awk '{print $1}')"
+  hash_cmd=(sha256sum)
 elif command -v shasum >/dev/null 2>&1; then
-  cloud_hash="$(shasum -a 256 "${VEHICLE_CLOUD_IMAGE_TAR}" | awk '{print $1}')"
-  runner_hash="$(shasum -a 256 "${SSH_RUNNER_IMAGE_TAR}" | awk '{print $1}')"
-  vehicle_runner_hash="$(shasum -a 256 "${VEHICLE_RUNNER_IMAGE_TAR}" | awk '{print $1}')"
-  vehicle_mapping_runner_hash="$(shasum -a 256 "${VEHICLE_MAPPING_RUNNER_IMAGE_TAR}" | awk '{print $1}')"
-  vehicle_argoexec_hash="$(shasum -a 256 "${VEHICLE_ARGOEXEC_IMAGE_TAR}" | awk '{print $1}')"
-  vehicle_pause_hash="$(shasum -a 256 "${VEHICLE_PAUSE_IMAGE_TAR}" | awk '{print $1}')"
+  hash_cmd=(shasum -a 256)
 else
   echo "sha256sum or shasum is required" >&2
   exit 1
+fi
+
+if [[ "${needs_worker_cloud}" == "true" ]]; then
+  cloud_hash="$("${hash_cmd[@]}" "${VEHICLE_CLOUD_IMAGE_TAR}" | awk '{print $1}')"
+fi
+if [[ "${needs_worker_ssh_runner}" == "true" ]]; then
+  runner_hash="$("${hash_cmd[@]}" "${SSH_RUNNER_IMAGE_TAR}" | awk '{print $1}')"
+fi
+if [[ "${needs_vehicle_runner}" == "true" ]]; then
+  vehicle_runner_hash="$("${hash_cmd[@]}" "${VEHICLE_RUNNER_IMAGE_TAR}" | awk '{print $1}')"
+fi
+if [[ "${needs_vehicle_mapping_runner}" == "true" ]]; then
+  vehicle_mapping_runner_hash="$("${hash_cmd[@]}" "${VEHICLE_MAPPING_RUNNER_IMAGE_TAR}" | awk '{print $1}')"
+fi
+if [[ "${needs_vehicle_argoexec}" == "true" ]]; then
+  vehicle_argoexec_hash="$("${hash_cmd[@]}" "${VEHICLE_ARGOEXEC_IMAGE_TAR}" | awk '{print $1}')"
+fi
+if [[ "${needs_vehicle_pause}" == "true" ]]; then
+  vehicle_pause_hash="$("${hash_cmd[@]}" "${VEHICLE_PAUSE_IMAGE_TAR}" | awk '{print $1}')"
 fi
 
 repo_tag_from_tar() {
@@ -128,11 +202,21 @@ normalize_image_ref() {
   fi
 }
 
-VEHICLE_CLOUD_IMAGE_REF="${VEHICLE_CLOUD_IMAGE_REF:-$(normalize_image_ref "$(repo_tag_from_tar "${VEHICLE_CLOUD_IMAGE_TAR}")")}"
-SSH_RUNNER_IMAGE_REF="${SSH_RUNNER_IMAGE_REF:-$(normalize_image_ref "$(repo_tag_from_tar "${SSH_RUNNER_IMAGE_TAR}")")}"
-VEHICLE_RUNNER_IMAGE_REF="${VEHICLE_RUNNER_IMAGE_REF:-$(normalize_image_ref "$(repo_tag_from_tar "${VEHICLE_RUNNER_IMAGE_TAR}")")}"
-VEHICLE_MAPPING_RUNNER_IMAGE_REF="${VEHICLE_MAPPING_RUNNER_IMAGE_REF:-$(normalize_image_ref "$(repo_tag_from_tar "${VEHICLE_MAPPING_RUNNER_IMAGE_TAR}")")}"
-VEHICLE_PAUSE_IMAGE_REF="${VEHICLE_PAUSE_IMAGE_REF:-$(normalize_image_ref "$(repo_tag_from_tar "${VEHICLE_PAUSE_IMAGE_TAR}")")}"
+if [[ "${needs_worker_cloud}" == "true" ]]; then
+  VEHICLE_CLOUD_IMAGE_REF="${VEHICLE_CLOUD_IMAGE_REF:-$(normalize_image_ref "$(repo_tag_from_tar "${VEHICLE_CLOUD_IMAGE_TAR}")")}"
+fi
+if [[ "${needs_worker_ssh_runner}" == "true" ]]; then
+  SSH_RUNNER_IMAGE_REF="${SSH_RUNNER_IMAGE_REF:-$(normalize_image_ref "$(repo_tag_from_tar "${SSH_RUNNER_IMAGE_TAR}")")}"
+fi
+if [[ "${needs_vehicle_runner}" == "true" ]]; then
+  VEHICLE_RUNNER_IMAGE_REF="${VEHICLE_RUNNER_IMAGE_REF:-$(normalize_image_ref "$(repo_tag_from_tar "${VEHICLE_RUNNER_IMAGE_TAR}")")}"
+fi
+if [[ "${needs_vehicle_mapping_runner}" == "true" ]]; then
+  VEHICLE_MAPPING_RUNNER_IMAGE_REF="${VEHICLE_MAPPING_RUNNER_IMAGE_REF:-$(normalize_image_ref "$(repo_tag_from_tar "${VEHICLE_MAPPING_RUNNER_IMAGE_TAR}")")}"
+fi
+if [[ "${needs_vehicle_pause}" == "true" ]]; then
+  VEHICLE_PAUSE_IMAGE_REF="${VEHICLE_PAUSE_IMAGE_REF:-$(normalize_image_ref "$(repo_tag_from_tar "${VEHICLE_PAUSE_IMAGE_TAR}")")}"
+fi
 
 image_exists_in_runtime() {
   local worker="$1"
@@ -314,20 +398,27 @@ fi
 EOF
 }
 
-for worker in ${WORKER_HOSTS}; do
-  remote_argoexec_tar="/tmp/$(basename "${ARGOEXEC_IMAGE_TAR}")"
+if [[ "${needs_worker_cloud}" == "true" || "${needs_worker_ssh_runner}" == "true" || "${needs_worker_argoexec}" == "true" ]]; then
+  for worker in ${WORKER_HOSTS}; do
+    remote_argoexec_tar="/tmp/$(basename "${ARGOEXEC_IMAGE_TAR}")"
 
-  sync_image_if_needed "${worker}" "${VEHICLE_CLOUD_IMAGE_TAR}" "${cloud_hash}" "vehicle-cloud" "${VEHICLE_CLOUD_IMAGE_REF}"
-  sync_image_if_needed "${worker}" "${SSH_RUNNER_IMAGE_TAR}" "${runner_hash}" "vehicle-ssh-runner" "${SSH_RUNNER_IMAGE_REF}"
-
-  ensure_argoexec_image "${worker}" || {
-    if [[ "${has_local_argoexec_tar}" != "true" ]]; then
-      echo "ARGOEXEC missing on worker and fallback tar not found: ${worker} -> ${ARGOEXEC_IMAGE_TAR}" >&2
-      exit 1
+    if [[ "${needs_worker_cloud}" == "true" ]]; then
+      sync_image_if_needed "${worker}" "${VEHICLE_CLOUD_IMAGE_TAR}" "${cloud_hash}" "vehicle-cloud" "${VEHICLE_CLOUD_IMAGE_REF}"
     fi
 
-    scp "${SSH_OPTS[@]}" "${ARGOEXEC_IMAGE_TAR}" "${worker}:${remote_argoexec_tar}"
-    ssh "${SSH_OPTS[@]}" "${worker}" "bash -lc '
+    if [[ "${needs_worker_ssh_runner}" == "true" ]]; then
+      sync_image_if_needed "${worker}" "${SSH_RUNNER_IMAGE_TAR}" "${runner_hash}" "vehicle-ssh-runner" "${SSH_RUNNER_IMAGE_REF}"
+    fi
+
+    if [[ "${needs_worker_argoexec}" == "true" ]]; then
+      ensure_argoexec_image "${worker}" || {
+        if [[ "${has_local_argoexec_tar}" != "true" ]]; then
+          echo "ARGOEXEC missing on worker and fallback tar not found: ${worker} -> ${ARGOEXEC_IMAGE_TAR}" >&2
+          exit 1
+        fi
+
+        scp "${SSH_OPTS[@]}" "${ARGOEXEC_IMAGE_TAR}" "${worker}:${remote_argoexec_tar}"
+        ssh "${SSH_OPTS[@]}" "${worker}" "bash -lc '
     set -euo pipefail
     if command -v nerdctl >/dev/null 2>&1; then
       nerdctl --address /run/k3s/containerd/containerd.sock --namespace k8s.io load -i \"${remote_argoexec_tar}\"
@@ -348,16 +439,32 @@ for worker in ${WORKER_HOSTS}; do
       fi
     fi
     '"
-    verify_imported_image "${worker}" "quay.io/argoproj/argoexec:${ARGO_WORKFLOWS_VERSION}"
-  }
+        verify_imported_image "${worker}" "quay.io/argoproj/argoexec:${ARGO_WORKFLOWS_VERSION}"
+      }
+    fi
 
-  print_worker_images "${worker}"
-done
+    print_worker_images "${worker}"
+  done
+fi
 
-for worker in ${VEHICLE_HOSTS}; do
-  sync_vehicle_image_if_needed "${worker}" "${VEHICLE_RUNNER_IMAGE_TAR}" "${vehicle_runner_hash}" "vehicle-autodrive-runner" "${VEHICLE_RUNNER_IMAGE_REF}"
-  sync_vehicle_image_if_needed "${worker}" "${VEHICLE_MAPPING_RUNNER_IMAGE_TAR}" "${vehicle_mapping_runner_hash}" "vehicle-mapping-runner" "${VEHICLE_MAPPING_RUNNER_IMAGE_REF}"
-  sync_vehicle_image_if_needed "${worker}" "${VEHICLE_ARGOEXEC_IMAGE_TAR}" "${vehicle_argoexec_hash}" "argoproj-argoexec-arm64" "quay.io/argoproj/argoexec:${ARGO_WORKFLOWS_VERSION}"
-  sync_vehicle_image_if_needed "${worker}" "${VEHICLE_PAUSE_IMAGE_TAR}" "${vehicle_pause_hash}" "rancher-mirrored-pause-3.6-arm64" "${VEHICLE_PAUSE_IMAGE_REF}"
-  print_vehicle_images "${worker}"
-done
+if [[ "${needs_vehicle_runner}" == "true" || "${needs_vehicle_mapping_runner}" == "true" || "${needs_vehicle_argoexec}" == "true" || "${needs_vehicle_pause}" == "true" ]]; then
+  for worker in ${VEHICLE_HOSTS}; do
+    if [[ "${needs_vehicle_runner}" == "true" ]]; then
+      sync_vehicle_image_if_needed "${worker}" "${VEHICLE_RUNNER_IMAGE_TAR}" "${vehicle_runner_hash}" "vehicle-autodrive-runner" "${VEHICLE_RUNNER_IMAGE_REF}"
+    fi
+
+    if [[ "${needs_vehicle_mapping_runner}" == "true" ]]; then
+      sync_vehicle_image_if_needed "${worker}" "${VEHICLE_MAPPING_RUNNER_IMAGE_TAR}" "${vehicle_mapping_runner_hash}" "vehicle-mapping-runner" "${VEHICLE_MAPPING_RUNNER_IMAGE_REF}"
+    fi
+
+    if [[ "${needs_vehicle_argoexec}" == "true" ]]; then
+      sync_vehicle_image_if_needed "${worker}" "${VEHICLE_ARGOEXEC_IMAGE_TAR}" "${vehicle_argoexec_hash}" "argoproj-argoexec-arm64" "quay.io/argoproj/argoexec:${ARGO_WORKFLOWS_VERSION}"
+    fi
+
+    if [[ "${needs_vehicle_pause}" == "true" ]]; then
+      sync_vehicle_image_if_needed "${worker}" "${VEHICLE_PAUSE_IMAGE_TAR}" "${vehicle_pause_hash}" "rancher-mirrored-pause-3.6-arm64" "${VEHICLE_PAUSE_IMAGE_REF}"
+    fi
+
+    print_vehicle_images "${worker}"
+  done
+fi

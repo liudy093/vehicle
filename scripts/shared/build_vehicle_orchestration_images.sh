@@ -11,6 +11,7 @@ VEHICLE_MAPPING_RUNNER_DOCKERFILE="${ROOT_DIR}/docker/mapping/vehicle-mapping-ru
 source "${SCRIPT_DIR}/lib/common.sh"
 
 ARGO_WORKFLOWS_VERSION="${ARGO_WORKFLOWS_VERSION:-v3.7.12}"
+IMAGE_PROFILE="${IMAGE_PROFILE:-all}"
 SSH_RUNNER_IMAGE="${SSH_RUNNER_IMAGE:-vehicle-ssh-runner:latest}"
 SSH_RUNNER_IMAGE_TAR="${SSH_RUNNER_IMAGE_TAR:-/tmp/vehicle-ssh-runner.amd64.tar}"
 SSH_RUNNER_BUILD_STATE_FILE="${SSH_RUNNER_BUILD_STATE_FILE:-${SSH_RUNNER_IMAGE_TAR}.build-context.sha256}"
@@ -37,6 +38,7 @@ Usage:
   ./scripts/shared/build_vehicle_orchestration_images.sh
 
 Environment variables:
+  IMAGE_PROFILE             Default: ${IMAGE_PROFILE} (all, autodrive, or mapping)
   SSH_RUNNER_IMAGE           Default: ${SSH_RUNNER_IMAGE}
   SSH_RUNNER_IMAGE_TAR       Default: ${SSH_RUNNER_IMAGE_TAR}
   VEHICLE_RUNNER_IMAGE       Default: ${VEHICLE_RUNNER_IMAGE}
@@ -61,6 +63,49 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   usage
   exit 0
 fi
+
+case "${IMAGE_PROFILE}" in
+  all|autodrive|mapping)
+    ;;
+  *)
+    echo "IMAGE_PROFILE must be one of: all, autodrive, mapping" >&2
+    usage >&2
+    exit 1
+    ;;
+esac
+
+needs_cloud_tar=false
+needs_ssh_runner=false
+needs_vehicle_runner=false
+needs_vehicle_mapping_runner=false
+needs_worker_argoexec=false
+needs_vehicle_argoexec=false
+needs_vehicle_pause=false
+
+case "${IMAGE_PROFILE}" in
+  all)
+    needs_cloud_tar=true
+    needs_ssh_runner=true
+    needs_vehicle_runner=true
+    needs_vehicle_mapping_runner=true
+    needs_worker_argoexec=true
+    needs_vehicle_argoexec=true
+    needs_vehicle_pause=true
+    ;;
+  autodrive)
+    needs_vehicle_runner=true
+    needs_vehicle_argoexec=true
+    needs_vehicle_pause=true
+    ;;
+  mapping)
+    needs_cloud_tar=true
+    needs_ssh_runner=true
+    needs_vehicle_mapping_runner=true
+    needs_worker_argoexec=true
+    needs_vehicle_argoexec=true
+    needs_vehicle_pause=true
+    ;;
+esac
 
 ensure_platform_image_tar() {
   local image="$1"
@@ -152,19 +197,17 @@ for cmd in bash python3; do
   require_cmd "${cmd}"
 done
 
-for image_tar in "${VEHICLE_CLOUD_IMAGE_TAR}"; do
-  if [[ ! -f "${image_tar}" ]]; then
-    echo "Required image tar not found: ${image_tar}" >&2
-    exit 1
-  fi
-done
+if [[ "${needs_cloud_tar}" == "true" && ! -f "${VEHICLE_CLOUD_IMAGE_TAR}" ]]; then
+  echo "Required image tar not found: ${VEHICLE_CLOUD_IMAGE_TAR}" >&2
+  exit 1
+fi
 
-if [[ "${SKIP_SSH_RUNNER_BUILD}" == "true" ]]; then
+if [[ "${needs_ssh_runner}" == "true" && "${SKIP_SSH_RUNNER_BUILD}" == "true" ]]; then
   if [[ ! -f "${SSH_RUNNER_IMAGE_TAR}" ]]; then
     echo "SKIP_SSH_RUNNER_BUILD=true but ssh-runner tar not found: ${SSH_RUNNER_IMAGE_TAR}" >&2
     exit 1
   fi
-elif command -v docker >/dev/null 2>&1; then
+elif [[ "${needs_ssh_runner}" == "true" ]] && command -v docker >/dev/null 2>&1; then
   current_ssh_runner_context_hash="$(build_ssh_runner_context_hash)"
 
   if [[ -f "${SSH_RUNNER_IMAGE_TAR}" && -f "${SSH_RUNNER_BUILD_STATE_FILE}" ]]; then
@@ -180,19 +223,19 @@ elif command -v docker >/dev/null 2>&1; then
     docker save -o "${SSH_RUNNER_IMAGE_TAR}" "${SSH_RUNNER_IMAGE}"
     printf "%s" "${current_ssh_runner_context_hash}" > "${SSH_RUNNER_BUILD_STATE_FILE}"
   fi
-else
+elif [[ "${needs_ssh_runner}" == "true" ]]; then
   if [[ ! -f "${SSH_RUNNER_IMAGE_TAR}" ]]; then
     echo "docker is not available and ssh-runner tar not found: ${SSH_RUNNER_IMAGE_TAR}" >&2
     exit 1
   fi
 fi
 
-if [[ "${SKIP_VEHICLE_RUNNER_BUILD}" == "true" ]]; then
+if [[ "${needs_vehicle_runner}" == "true" && "${SKIP_VEHICLE_RUNNER_BUILD}" == "true" ]]; then
   if [[ ! -f "${VEHICLE_RUNNER_IMAGE_TAR}" ]]; then
     echo "SKIP_VEHICLE_RUNNER_BUILD=true but vehicle-runner tar not found: ${VEHICLE_RUNNER_IMAGE_TAR}" >&2
     exit 1
   fi
-elif command -v docker >/dev/null 2>&1; then
+elif [[ "${needs_vehicle_runner}" == "true" ]] && command -v docker >/dev/null 2>&1; then
   current_vehicle_runner_context_hash="$(build_vehicle_runner_context_hash)"
 
   if [[ -f "${VEHICLE_RUNNER_IMAGE_TAR}" && -f "${VEHICLE_RUNNER_BUILD_STATE_FILE}" ]]; then
@@ -208,19 +251,19 @@ elif command -v docker >/dev/null 2>&1; then
     docker save -o "${VEHICLE_RUNNER_IMAGE_TAR}" "${VEHICLE_RUNNER_IMAGE}"
     printf "%s" "${current_vehicle_runner_context_hash}" > "${VEHICLE_RUNNER_BUILD_STATE_FILE}"
   fi
-else
+elif [[ "${needs_vehicle_runner}" == "true" ]]; then
   if [[ ! -f "${VEHICLE_RUNNER_IMAGE_TAR}" ]]; then
     echo "docker is not available and vehicle-runner tar not found: ${VEHICLE_RUNNER_IMAGE_TAR}" >&2
     exit 1
   fi
 fi
 
-if [[ "${SKIP_VEHICLE_MAPPING_RUNNER_BUILD}" == "true" ]]; then
+if [[ "${needs_vehicle_mapping_runner}" == "true" && "${SKIP_VEHICLE_MAPPING_RUNNER_BUILD}" == "true" ]]; then
   if [[ ! -f "${VEHICLE_MAPPING_RUNNER_IMAGE_TAR}" ]]; then
     echo "SKIP_VEHICLE_MAPPING_RUNNER_BUILD=true but vehicle-mapping-runner tar not found: ${VEHICLE_MAPPING_RUNNER_IMAGE_TAR}" >&2
     exit 1
   fi
-elif command -v docker >/dev/null 2>&1; then
+elif [[ "${needs_vehicle_mapping_runner}" == "true" ]] && command -v docker >/dev/null 2>&1; then
   current_vehicle_mapping_runner_context_hash="$(build_vehicle_runner_context_hash)"
 
   if [[ -f "${VEHICLE_MAPPING_RUNNER_IMAGE_TAR}" && -f "${VEHICLE_MAPPING_RUNNER_BUILD_STATE_FILE}" ]]; then
@@ -236,14 +279,25 @@ elif command -v docker >/dev/null 2>&1; then
     docker save -o "${VEHICLE_MAPPING_RUNNER_IMAGE_TAR}" "${VEHICLE_MAPPING_RUNNER_IMAGE}"
     printf "%s" "${current_vehicle_mapping_runner_context_hash}" > "${VEHICLE_MAPPING_RUNNER_BUILD_STATE_FILE}"
   fi
-else
+elif [[ "${needs_vehicle_mapping_runner}" == "true" ]]; then
   if [[ ! -f "${VEHICLE_MAPPING_RUNNER_IMAGE_TAR}" ]]; then
     echo "docker is not available and vehicle-mapping-runner tar not found: ${VEHICLE_MAPPING_RUNNER_IMAGE_TAR}" >&2
     exit 1
   fi
 fi
 
-ensure_platform_image_tar "${VEHICLE_MAPPING_RUNNER_IMAGE}" "linux/arm64" "${VEHICLE_MAPPING_RUNNER_IMAGE_TAR}" "vehicle mapping runner"
-ensure_platform_image_tar "${VEHICLE_ARGOEXEC_IMAGE}" "linux/amd64" "${ARGOEXEC_IMAGE_TAR}" "worker argoexec"
-ensure_platform_image_tar "${VEHICLE_ARGOEXEC_IMAGE}" "linux/arm64" "${VEHICLE_ARGOEXEC_IMAGE_TAR}" "vehicle argoexec"
-ensure_platform_image_tar "${VEHICLE_PAUSE_IMAGE}" "linux/arm64" "${VEHICLE_PAUSE_IMAGE_TAR}" "vehicle pause"
+if [[ "${needs_vehicle_mapping_runner}" == "true" ]]; then
+  ensure_platform_image_tar "${VEHICLE_MAPPING_RUNNER_IMAGE}" "linux/arm64" "${VEHICLE_MAPPING_RUNNER_IMAGE_TAR}" "vehicle mapping runner"
+fi
+
+if [[ "${needs_worker_argoexec}" == "true" ]]; then
+  ensure_platform_image_tar "${VEHICLE_ARGOEXEC_IMAGE}" "linux/amd64" "${ARGOEXEC_IMAGE_TAR}" "worker argoexec"
+fi
+
+if [[ "${needs_vehicle_argoexec}" == "true" ]]; then
+  ensure_platform_image_tar "${VEHICLE_ARGOEXEC_IMAGE}" "linux/arm64" "${VEHICLE_ARGOEXEC_IMAGE_TAR}" "vehicle argoexec"
+fi
+
+if [[ "${needs_vehicle_pause}" == "true" ]]; then
+  ensure_platform_image_tar "${VEHICLE_PAUSE_IMAGE}" "linux/arm64" "${VEHICLE_PAUSE_IMAGE_TAR}" "vehicle pause"
+fi

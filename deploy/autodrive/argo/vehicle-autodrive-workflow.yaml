@@ -10,6 +10,8 @@ spec:
     parameters:
       - name: target_vehicle
         value: ${TARGET_VEHICLE}
+      - name: endpoint_name
+        value: ${TARGET_ENDPOINT}
   podGC:
     strategy: OnWorkflowSuccess
   ttlStrategy:
@@ -75,7 +77,7 @@ spec:
             value: pod
         command: ["bash", "-lc"]
         args:
-          - /opt/vehicle/scripts/autodrive/start_vehicle_autodrive.sh {{workflow.parameters.target_vehicle}}
+          - /opt/vehicle/scripts/autodrive/start_vehicle_autodrive.sh {{workflow.parameters.target_vehicle}} {{workflow.parameters.endpoint_name}}
         securityContext:
           privileged: true
         volumeMounts:

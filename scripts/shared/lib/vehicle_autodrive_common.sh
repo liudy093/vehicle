@@ -13,7 +13,7 @@ vehicle_autodrive_validate_vehicle_id() {
   local vehicle_id="${1:?vehicle id is required}"
 
   case "${vehicle_id}" in
-    vehicle1|vehicle2)
+    vehicle1|vehicle2|vehicle3)
       ;;
     *)
       echo "Unsupported vehicle id: ${vehicle_id}" >&2
@@ -30,6 +30,7 @@ vehicle_autodrive_host_inventory_key() {
   case "${vehicle_id}" in
     vehicle1) printf '%s\n' "VEHICLE1_HOST" ;;
     vehicle2) printf '%s\n' "VEHICLE2_HOST" ;;
+    vehicle3) printf '%s\n' "VEHICLE3_HOST" ;;
   esac
 }
 

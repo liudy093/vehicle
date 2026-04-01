@@ -16,8 +16,10 @@ vehicle_inventory_host() {
   case "${vehicle_id}:${account_kind}" in
     vehicle1:nvidia) key="VEHICLE1_HOST" ;;
     vehicle2:nvidia) key="VEHICLE2_HOST" ;;
+    vehicle3:nvidia) key="VEHICLE3_HOST" ;;
     vehicle1:root) key="VEHICLE1_ROOT_HOST" ;;
     vehicle2:root) key="VEHICLE2_ROOT_HOST" ;;
+    vehicle3:root) key="VEHICLE3_ROOT_HOST" ;;
     *)
       echo "Unsupported vehicle inventory lookup: ${vehicle_id}/${account_kind}" >&2
       return 1
@@ -39,6 +41,7 @@ vehicle_inventory_expected_hostname() {
   case "${vehicle_id}" in
     vehicle1) key="VEHICLE1_EXPECTED_HOSTNAME" ;;
     vehicle2) key="VEHICLE2_EXPECTED_HOSTNAME" ;;
+    vehicle3) key="VEHICLE3_EXPECTED_HOSTNAME" ;;
     *)
       echo "Unsupported vehicle hostname lookup: ${vehicle_id}" >&2
       return 1

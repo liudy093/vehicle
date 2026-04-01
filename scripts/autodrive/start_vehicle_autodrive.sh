@@ -9,9 +9,9 @@ DISPLAY_SCRIPT_PATH="${0}"
 
 usage() {
   local vehicle_id="${1:-<vehicle-id>}"
-  local host_ref="config/shared/vehicle_hosts.env -> VEHICLE1_HOST|VEHICLE2_HOST"
+  local host_ref="config/shared/vehicle_hosts.env -> VEHICLE1_HOST|VEHICLE2_HOST|VEHICLE3_HOST"
 
-  if [[ "${vehicle_id}" == "vehicle1" || "${vehicle_id}" == "vehicle2" ]]; then
+  if [[ "${vehicle_id}" == "vehicle1" || "${vehicle_id}" == "vehicle2" || "${vehicle_id}" == "vehicle3" ]]; then
     host_ref="$(vehicle_autodrive_host_usage_ref "${vehicle_id}")"
   fi
 
