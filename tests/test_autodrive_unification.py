@@ -7,6 +7,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 WORKFLOW_PATH = ROOT / "deploy" / "autodrive" / "argo" / "vehicle-autodrive-workflow.yaml"
 DEPLOY_SCRIPT_PATH = ROOT / "scripts" / "autodrive" / "deploy_vehicle_autodrive.sh"
 DUAL_DEPLOY_SCRIPT_PATH = ROOT / "scripts" / "autodrive" / "deploy_dual_vehicle_autodrive.sh"
+TRIPLE_DEPLOY_SCRIPT_PATH = ROOT / "scripts" / "autodrive" / "deploy_triple_vehicle_autodrive.sh"
 
 
 def run_command(command: str) -> subprocess.CompletedProcess[str]:
@@ -148,6 +149,15 @@ class AutodriveUnificationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, msg=result.stderr)
         self.assertIn("VEHICLE1_ENDPOINT          Default: end_1", result.stdout)
         self.assertIn("VEHICLE2_ENDPOINT          Default: end_2", result.stdout)
+
+    def test_triple_vehicle_deploy_help_mentions_fixed_triple_endpoints(self) -> None:
+        result = run_command(f"{TRIPLE_DEPLOY_SCRIPT_PATH} --help")
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertIn("VEHICLE1_ENDPOINT          Default: end_1", result.stdout)
+        self.assertIn("VEHICLE2_ENDPOINT          Default: end_2", result.stdout)
+        self.assertIn("VEHICLE3_ENDPOINT          Default: end_3", result.stdout)
+        self.assertIn("Do not run this script unless personnel are on the vehicles.", result.stdout)
 
 
 if __name__ == "__main__":
