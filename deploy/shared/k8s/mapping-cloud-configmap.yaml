@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: perception-cloud-config
-  namespace: perception
+  name: mapping-cloud-config
+  namespace: argo
   labels:
-    app.kubernetes.io/name: perception-cloud
-    app.kubernetes.io/part-of: perception-cloud
+    app.kubernetes.io/name: mapping-cloud
+    app.kubernetes.io/part-of: mapping-cloud
 data:
   SERVER_HOST: "0.0.0.0"
   SERVER_PORT: "15000"
@@ -16,7 +16,7 @@ data:
   FUSED_CLOUD_TOPIC_NAME: "fused"
   FUSED_LIDAR_IDS: "forward,left,right"
   FUSED_LIDAR_EXTRINSICS: "forward:0.0,0.0,0.0,0;left:-0.8,-0.6,0.0,90;right:0.8,-0.6,0.0,-90"
-  GLOBAL_MAP_EXPORT_DIR: "/tmp/perception_maps"
+  GLOBAL_MAP_EXPORT_DIR: "/tmp/mapping_maps"
   GLOBAL_MAP_EXPORT_PREFIX: "global_map"
   GLOBAL_MAP_LEAF_SIZE: "0.15"
   GLOBAL_FRAME_LEAF_SIZE: "0.1"

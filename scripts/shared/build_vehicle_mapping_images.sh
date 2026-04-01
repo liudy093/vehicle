@@ -3,4 +3,4 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-IMAGE_PROFILE=mapping exec "${SCRIPT_DIR}/build_vehicle_orchestration_images.sh" "$@"
+IMAGE_PROFILE=mapping IMAGE_SCRIPT_NAME=./scripts/shared/build_vehicle_mapping_images.sh exec "${SCRIPT_DIR}/lib/build_vehicle_image_profiles.sh" "$@"

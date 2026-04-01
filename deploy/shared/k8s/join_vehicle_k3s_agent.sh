@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export KUBECONFIG=/tmp/perception.k3s.yaml
+export KUBECONFIG=/tmp/vehicle.k3s.yaml
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VEHICLE_ID="${VEHICLE_ID:-}"
@@ -61,10 +61,10 @@ if [[ -z "${K3S_TOKEN}" ]]; then
 fi
 
 NODE_LABELS=(
-  "perception.role=vehicle"
-  "perception.vehicle.id=${VEHICLE_ID}"
+  "vehicle.role=vehicle"
+  "vehicle.id=${VEHICLE_ID}"
 )
-NODE_TAINT="perception.role=vehicle:NoSchedule"
+NODE_TAINT="vehicle.role=vehicle:NoSchedule"
 INSTALL_EXEC="agent --node-name ${VEHICLE_ID} --node-label ${NODE_LABELS[0]} --node-label ${NODE_LABELS[1]} --node-taint ${NODE_TAINT}"
 REMOTE_USER="${VEHICLE_HOST%%@*}"
 

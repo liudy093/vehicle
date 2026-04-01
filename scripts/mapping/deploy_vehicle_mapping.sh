@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export KUBECONFIG=/tmp/perception.k3s.yaml
+export KUBECONFIG=/tmp/vehicle.k3s.yaml
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -238,8 +238,6 @@ for vehicle_id in vehicle1 vehicle2; do
   wait_for_vehicle_node_ready_window "${vehicle_id}" "60s"
 done
 
-kubectl apply -f "${K8S_DIR}/namespace-perception.yaml"
-
 mapfile -t online_vehicle_ids < <(collect_online_vehicle_ids)
 if [[ "${#online_vehicle_ids[@]}" -eq 0 ]]; then
   echo "online vehicles: none; deploying cloud-only mapping workflow"
@@ -258,4 +256,4 @@ workflow_name="$(kubectl create -f "${rendered_workflow_file}" -o name)"
 echo "Submitted ${workflow_name}"
 echo "Watch progress with:"
 echo "  kubectl get wf -n argo"
-echo "  kubectl get pods -n perception"
+echo "  kubectl get pods -n argo"

@@ -88,14 +88,14 @@ cleanup_vehicle_state() {
   fi
 
 eval "${REMOTE_RUNTIME_FUNCTIONS}"
-vehicle_remote_stop_systemd_unit perception-vehicle2-rslidar
-vehicle_remote_stop_systemd_unit perception-vehicle2-gps-node
-vehicle_remote_stop_systemd_unit perception-vehicle2-gps-pose-bridge
-vehicle_remote_stop_systemd_unit perception-vehicle2-gps-imu-bridge
-vehicle_remote_stop_systemd_unit perception-vehicle2-sender
-vehicle_remote_stop_systemd_unit perception-vehicle2-ros1-bridge
-vehicle_remote_stop_systemd_unit perception-vehicle2-fastlio
-vehicle_remote_stop_systemd_unit perception-vehicle2-fastlio-http-sender
+vehicle_remote_stop_systemd_unit mapping-vehicle2-rslidar
+vehicle_remote_stop_systemd_unit mapping-vehicle2-gps-node
+vehicle_remote_stop_systemd_unit mapping-vehicle2-gps-pose-bridge
+vehicle_remote_stop_systemd_unit mapping-vehicle2-gps-imu-bridge
+vehicle_remote_stop_systemd_unit mapping-vehicle2-sender
+vehicle_remote_stop_systemd_unit mapping-vehicle2-ros1-bridge
+vehicle_remote_stop_systemd_unit mapping-vehicle2-fastlio
+vehicle_remote_stop_systemd_unit mapping-vehicle2-fastlio-http-sender
 vehicle_remote_stop_mapping_processes
 rm -f \
   /tmp/rslidar_sdk_vehicle2.log \
@@ -146,15 +146,15 @@ resolve_bridge_bin() {
 
 vehicle_remote_stop_mapping_processes
 
-vehicle_remote_launch_detached perception-vehicle2-rslidar \
+vehicle_remote_launch_detached mapping-vehicle2-rslidar \
   "source /opt/ros/foxy/setup.bash >/dev/null 2>&1 || true; source ${REMOTE_AUTODRIVE_DIR}/install/setup.bash >/dev/null 2>&1 || true; cd ${REMOTE_AUTODRIVE_DIR}; exec ros2 launch rslidar_sdk start.py >/tmp/rslidar_sdk_vehicle2.log 2>&1"
-vehicle_remote_launch_detached perception-vehicle2-gps-node \
+vehicle_remote_launch_detached mapping-vehicle2-gps-node \
   "source /opt/ros/foxy/setup.bash >/dev/null 2>&1 || true; source ${REMOTE_AUTODRIVE_DIR}/install/setup.bash >/dev/null 2>&1 || true; cd ${REMOTE_AUTODRIVE_DIR}; exec python3 -c 'import gps.gps as m; m.main()' >/tmp/gps_node.log 2>&1"
-vehicle_remote_launch_detached perception-vehicle2-gps-pose-bridge \
+vehicle_remote_launch_detached mapping-vehicle2-gps-pose-bridge \
   "source /opt/ros/foxy/setup.bash >/dev/null 2>&1 || true; source ${REMOTE_AUTODRIVE_DIR}/install/setup.bash >/dev/null 2>&1 || true; source ${REMOTE_MAPPING_ROS2_DIR}/install/setup.bash >/dev/null 2>&1 || true; exec ${REMOTE_MAPPING_ROS2_DIR}/install/data_sender_ros2/lib/data_sender_ros2/gps_pose_bridge_node --ros-args -p input_topic:=/gps_data -p output_topic:=/gps >/tmp/gps_pose_bridge_vehicle2.log 2>&1"
-vehicle_remote_launch_detached perception-vehicle2-gps-imu-bridge \
+vehicle_remote_launch_detached mapping-vehicle2-gps-imu-bridge \
   "source /opt/ros/foxy/setup.bash >/dev/null 2>&1 || true; source ${REMOTE_AUTODRIVE_DIR}/install/setup.bash >/dev/null 2>&1 || true; source ${REMOTE_MAPPING_ROS2_DIR}/install/setup.bash >/dev/null 2>&1 || true; exec ${REMOTE_MAPPING_ROS2_DIR}/install/data_sender_ros2/lib/data_sender_ros2/gps_imu_bridge_node --ros-args -p input_topic:=/gps_data -p output_topic:=/imu -p frame_id:='${IMU_FRAME_ID}' -p angular_velocity_axes:='${ANGULAR_VELOCITY_AXES}' -p angular_velocity_signs:='[${ANGULAR_VELOCITY_SIGNS}]' -p linear_acceleration_axes:='${LINEAR_ACCELERATION_AXES}' -p linear_acceleration_signs:='[${LINEAR_ACCELERATION_SIGNS}]' -p linear_acceleration_scale:='${LINEAR_ACCELERATION_SCALE}' >/tmp/gps_imu_bridge_vehicle2.log 2>&1"
-vehicle_remote_launch_detached perception-vehicle2-sender \
+vehicle_remote_launch_detached mapping-vehicle2-sender \
   "source /opt/ros/foxy/setup.bash >/dev/null 2>&1 || true; source ${REMOTE_AUTODRIVE_DIR}/install/setup.bash >/dev/null 2>&1 || true; source ${REMOTE_MAPPING_ROS2_DIR}/install/setup.bash >/dev/null 2>&1 || true; exec ${REMOTE_MAPPING_ROS2_DIR}/install/data_sender_ros2/lib/data_sender_ros2/sender_node --ros-args -p vehicle_id:=vehicle2 -p cloud_server_url:='${CLOUD_SERVER_URL}' -p cloud_topics:=/forward/rslidar_points,/left/rslidar_points,/right/rslidar_points -p gps_topic:=/gps -p send_interval_sec:='${SEND_INTERVAL_SEC}' >/tmp/sender_node_vehicle2.log 2>&1"
 
 BRIDGE_BIN="$(resolve_bridge_bin)" || {
@@ -162,15 +162,15 @@ BRIDGE_BIN="$(resolve_bridge_bin)" || {
   exit 1
 }
 
-vehicle_remote_launch_detached perception-vehicle2-ros1-bridge \
+vehicle_remote_launch_detached mapping-vehicle2-ros1-bridge \
   "source /opt/ros/noetic/setup.bash >/dev/null 2>&1 || true; source ${REMOTE_AUTODRIVE_DIR}/install/setup.bash >/dev/null 2>&1 || true; if [[ -f ${REMOTE_MAPPING_ROS2_DIR}/install/setup.bash ]]; then source ${REMOTE_MAPPING_ROS2_DIR}/install/setup.bash >/dev/null 2>&1 || true; fi; if [[ -f /home/nvidia/ros2_ws/install/setup.bash ]]; then source /home/nvidia/ros2_ws/install/setup.bash >/dev/null 2>&1 || true; fi; export ROS_MASTER_URI=http://127.0.0.1:11311; export ROS_HOSTNAME=127.0.0.1; exec '${BRIDGE_BIN}' --bridge-all-2to1-topics >/tmp/ros1_bridge_vehicle2.log 2>&1"
 
-vehicle_remote_launch_detached perception-vehicle2-fastlio \
+vehicle_remote_launch_detached mapping-vehicle2-fastlio \
   "source /opt/ros/noetic/setup.bash >/dev/null 2>&1 || true; source ${REMOTE_MAPPING_CATKIN_DIR}/devel/setup.bash >/dev/null 2>&1 || true; exec roslaunch fast_lio2 mapping_robosense.launch lid_topic:=/forward/rslidar_points imu_topic:=/imu >/tmp/fastlio_mapping_vehicle2.log 2>&1"
 
 sleep 2
 
-vehicle_remote_launch_detached perception-vehicle2-fastlio-http-sender \
+vehicle_remote_launch_detached mapping-vehicle2-fastlio-http-sender \
   "source /opt/ros/noetic/setup.bash >/dev/null 2>&1 || true; source ${REMOTE_MAPPING_CATKIN_DIR}/devel/setup.bash >/dev/null 2>&1 || true; exec ${REMOTE_MAPPING_CATKIN_DIR}/devel/lib/data_listener2/fastlio_http_sender __name:=fastlio_http_sender _vehicle_id:=vehicle2 _cloud_server_url:='${CLOUD_SERVER_URL}' _cloud_topic:=/cloud_registered _odom_topic:=/Odometry _send_interval_sec:='${SEND_INTERVAL_SEC}' >/tmp/fastlio_http_sender_vehicle2.log 2>&1"
 
 echo vehicle_host=${HOSTNAME}

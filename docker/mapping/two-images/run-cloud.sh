@@ -12,8 +12,8 @@ Environment variables:
   SERVER_PORT   Default: 5000
   PCL_PUB_NAME  Default: cloud_sent
   FRAME_ID      Default: map
-  LOG_DIR       Optional host directory to mount to /data/perception/logs
-  MAPS_DIR      Optional host directory to mount to /data/perception/maps
+  LOG_DIR       Optional host directory to mount to /data/mapping/logs
+  MAPS_DIR      Optional host directory to mount to /data/mapping/maps
 EOF
 }
 
@@ -72,11 +72,11 @@ cmd+=(
 )
 
 if [[ -n "${LOG_DIR}" ]]; then
-  cmd+=(-v "${LOG_DIR}:/data/perception/logs")
+  cmd+=(-v "${LOG_DIR}:/data/mapping/logs")
 fi
 
 if [[ -n "${MAPS_DIR}" ]]; then
-  cmd+=(-v "${MAPS_DIR}:/data/perception/maps")
+  cmd+=(-v "${MAPS_DIR}:/data/mapping/maps")
 fi
 
 cmd+=("${IMAGE_NAME}")

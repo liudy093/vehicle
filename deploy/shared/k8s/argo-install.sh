@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export KUBECONFIG=/tmp/perception.k3s.yaml
+export KUBECONFIG=/tmp/vehicle.k3s.yaml
 
 ARGO_NAMESPACE="${ARGO_NAMESPACE:-argo}"
-PERCEPTION_NAMESPACE="${PERCEPTION_NAMESPACE:-perception}"
 ARGO_WORKFLOWS_VERSION="${ARGO_WORKFLOWS_VERSION:-v3.7.12}"
 ARGO_INSTALL_MANIFEST_URL="${ARGO_INSTALL_MANIFEST_URL:-https://github.com/argoproj/argo-workflows/releases/download/${ARGO_WORKFLOWS_VERSION}/install.yaml}"
 APPLY_ARGO_INSTALL_MANIFEST="${APPLY_ARGO_INSTALL_MANIFEST:-true}"
@@ -22,7 +21,6 @@ require_cmd() {
 require_cmd kubectl
 
 kubectl create namespace "${ARGO_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
-kubectl create namespace "${PERCEPTION_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
 
 if [[ "${APPLY_ARGO_INSTALL_MANIFEST}" == "true" ]]; then
   require_cmd curl
@@ -57,13 +55,6 @@ data:
     # Argo ${ARGO_WORKFLOWS_VERSION} uses the supported emissary executor path by default.
 ${executor_env_block}
 EOF
-
-kubectl create rolebinding argo-perception-admin \
-  -n "${PERCEPTION_NAMESPACE}" \
-  --clusterrole=admin \
-  --serviceaccount="${ARGO_NAMESPACE}:argo" \
-  --dry-run=client \
-  -o yaml | kubectl apply -f -
 
 kubectl create rolebinding argo-workflowtaskresults-writer \
   -n "${ARGO_NAMESPACE}" \

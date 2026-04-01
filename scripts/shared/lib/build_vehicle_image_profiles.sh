@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export KUBECONFIG=/tmp/perception.k3s.yaml
+export KUBECONFIG=/tmp/vehicle.k3s.yaml
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+SHARED_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+ROOT_DIR="$(cd "${SHARED_DIR}/../.." && pwd)"
 SSH_RUNNER_DOCKERFILE="${ROOT_DIR}/docker/shared/ssh-runner/Dockerfile"
 VEHICLE_RUNNER_DOCKERFILE="${VEHICLE_RUNNER_DOCKERFILE:-${ROOT_DIR}/docker/autodrive/vehicle-runner/Dockerfile}"
 VEHICLE_MAPPING_RUNNER_DOCKERFILE="${ROOT_DIR}/docker/mapping/vehicle-mapping-runner/Dockerfile"
-source "${SCRIPT_DIR}/lib/common.sh"
+source "${SCRIPT_DIR}/common.sh"
 
 ARGO_WORKFLOWS_VERSION="${ARGO_WORKFLOWS_VERSION:-v3.7.12}"
 IMAGE_PROFILE="${IMAGE_PROFILE:-all}"
@@ -31,11 +32,12 @@ SKIP_SSH_RUNNER_BUILD="${SKIP_SSH_RUNNER_BUILD:-false}"
 SKIP_VEHICLE_RUNNER_BUILD="${SKIP_VEHICLE_RUNNER_BUILD:-false}"
 SKIP_VEHICLE_MAPPING_RUNNER_BUILD="${SKIP_VEHICLE_MAPPING_RUNNER_BUILD:-false}"
 SSH_IDENTITY_FILE="${SSH_IDENTITY_FILE:-}"
+IMAGE_SCRIPT_NAME="${IMAGE_SCRIPT_NAME:-./scripts/shared/build_vehicle_image_profiles.sh}"
 
 usage() {
   cat <<EOF
 Usage:
-  ./scripts/shared/build_vehicle_orchestration_images.sh
+  ${IMAGE_SCRIPT_NAME}
 
 Environment variables:
   IMAGE_PROFILE             Default: ${IMAGE_PROFILE} (all, autodrive, or mapping)

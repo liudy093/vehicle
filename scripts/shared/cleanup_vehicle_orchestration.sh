@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export KUBECONFIG=/tmp/perception.k3s.yaml
+export KUBECONFIG=/tmp/vehicle.k3s.yaml
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -11,7 +11,6 @@ source "${SCRIPT_DIR}/lib/vehicle_remote_runtime.sh"
 source "${SCRIPT_DIR}/vehicle_inventory.sh"
 
 ARGO_NAMESPACE="${ARGO_NAMESPACE:-argo}"
-PERCEPTION_NAMESPACE="${PERCEPTION_NAMESPACE:-perception}"
 ARGO_WORKFLOWS_VERSION="${ARGO_WORKFLOWS_VERSION:-v3.7.12}"
 ARGO_INSTALL_MANIFEST_URL="${ARGO_INSTALL_MANIFEST_URL:-https://github.com/argoproj/argo-workflows/releases/download/${ARGO_WORKFLOWS_VERSION}/install.yaml}"
 GENERAL_WORKERS="${GENERAL_WORKERS:-k3s-worker-1 k3s-worker-2 k3s-worker-3}"
@@ -33,7 +32,6 @@ Usage:
 
 Environment variables:
   ARGO_NAMESPACE       Default: ${ARGO_NAMESPACE}
-  PERCEPTION_NAMESPACE Default: ${PERCEPTION_NAMESPACE}
   REMOVE_CLUSTER_INFRA Default: ${REMOVE_CLUSTER_INFRA}
   REMOVE_ARGO          Default: ${REMOVE_ARGO}, only used when REMOVE_CLUSTER_INFRA=true
 
@@ -80,9 +78,9 @@ if [[ -n "${mapping_workflows}" ]]; then
     kubectl delete -n "${ARGO_NAMESPACE}" "${workflow_ref}" --ignore-not-found
   done <<< "${mapping_workflows}"
 fi
-kubectl delete -f "${K8S_DIR}/perception-cloud-service.yaml" --ignore-not-found
-kubectl delete -f "${K8S_DIR}/perception-cloud-deployment.yaml" --ignore-not-found
-kubectl delete -f "${K8S_DIR}/perception-cloud-configmap.yaml" --ignore-not-found
+kubectl delete -f "${K8S_DIR}/mapping-cloud-service.yaml" --ignore-not-found
+kubectl delete -f "${K8S_DIR}/mapping-cloud-deployment.yaml" --ignore-not-found
+kubectl delete -f "${K8S_DIR}/mapping-cloud-configmap.yaml" --ignore-not-found
 kubectl delete configmap vehicle-inventory -n "${ARGO_NAMESPACE}" --ignore-not-found
 
 if [[ "${REMOVE_CLUSTER_INFRA}" == "true" ]]; then
@@ -105,7 +103,7 @@ if [[ "${REMOVE_CLUSTER_INFRA}" == "true" ]]; then
 
   echo "Removing worker labels..."
   for node in ${GENERAL_WORKERS}; do
-    kubectl label node "${node}" perception.role- >/dev/null 2>&1 || true
+    kubectl label node "${node}" vehicle.role- >/dev/null 2>&1 || true
   done
 
   if [[ "${REMOVE_ARGO}" == "true" ]]; then
@@ -113,7 +111,6 @@ if [[ "${REMOVE_CLUSTER_INFRA}" == "true" ]]; then
     curl -fsSL "${ARGO_INSTALL_MANIFEST_URL}" | kubectl delete -f - >/dev/null 2>&1 || true
   fi
 
-  kubectl delete namespace "${PERCEPTION_NAMESPACE}" --ignore-not-found >/dev/null 2>&1 || true
   kubectl delete namespace "${ARGO_NAMESPACE}" --ignore-not-found >/dev/null 2>&1 || true
 else
   echo "Preserving vehicle k3s agents, nodes, Argo, and worker labels."

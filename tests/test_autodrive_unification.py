@@ -41,6 +41,14 @@ class AutodriveUnificationTests(unittest.TestCase):
             workflow_text,
         )
 
+    def test_workflow_uses_vehicle_node_contract(self) -> None:
+        workflow_text = WORKFLOW_PATH.read_text()
+
+        self.assertIn('vehicle.id: "{{workflow.parameters.target_vehicle}}"', workflow_text)
+        self.assertIn("- key: vehicle.role", workflow_text)
+        self.assertNotIn("perception.vehicle.id", workflow_text)
+        self.assertNotIn("perception.role", workflow_text)
+
     def test_deploy_script_references_argo_pod_namespace(self) -> None:
         deploy_script_text = DEPLOY_SCRIPT_PATH.read_text()
 

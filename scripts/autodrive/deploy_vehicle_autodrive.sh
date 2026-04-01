@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export KUBECONFIG=/tmp/perception.k3s.yaml
+export KUBECONFIG=/tmp/vehicle.k3s.yaml
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -133,8 +133,6 @@ if ! vehicle_node_ready "${TARGET_VEHICLE}"; then
   echo "Target vehicle node ${TARGET_VEHICLE} is not Ready." >&2
   exit 1
 fi
-
-kubectl apply -f "${K8S_DIR}/namespace-perception.yaml"
 
 rendered_workflow_file="$(mktemp "${TMPDIR:-/tmp}/vehicle-autodrive-rendered.XXXXXX.yaml")"
 trap 'rm -f "${rendered_workflow_file}"' EXIT

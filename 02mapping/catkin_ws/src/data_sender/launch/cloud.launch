@@ -3,7 +3,7 @@
   <arg name="server_port" default="5000" />
   <arg name="pcl_pub_name" default="cloud_sent" />
   <arg name="frame_id" default="map" />
-  <arg name="global_map_export_dir" default="/tmp/perception_maps" />
+  <arg name="global_map_export_dir" default="/tmp/mapping_maps" />
   <arg name="global_map_export_prefix" default="global_map" />
 
   <node pkg="octomap_server" type="octomap_server_node" name="octomap_server">

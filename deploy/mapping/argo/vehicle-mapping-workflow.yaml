@@ -56,12 +56,12 @@ spec:
         command: ["bash", "-lc"]
         args:
           - |
-            kubectl apply -f /opt/vehicle/deploy/shared/k8s/perception-cloud-configmap.yaml
-            kubectl apply -f /opt/vehicle/deploy/shared/k8s/perception-cloud-deployment.yaml
-            kubectl apply -f /opt/vehicle/deploy/shared/k8s/perception-cloud-service.yaml
-            kubectl rollout status deployment/perception-cloud -n perception --timeout=5m
+            kubectl apply -f /opt/vehicle/deploy/shared/k8s/mapping-cloud-configmap.yaml
+            kubectl apply -f /opt/vehicle/deploy/shared/k8s/mapping-cloud-deployment.yaml
+            kubectl apply -f /opt/vehicle/deploy/shared/k8s/mapping-cloud-service.yaml
+            kubectl rollout status deployment/mapping-cloud -n argo --timeout=5m
       nodeSelector:
-        perception.role: general
+        vehicle.role: general
 
     - name: verify-cloud
       container:
@@ -71,11 +71,11 @@ spec:
         command: ["bash", "-lc"]
         args:
           - |
-            payload="$(curl -fsS http://perception-cloud.perception.svc.cluster.local:18080/api/cloud)"
+            payload="$(curl -fsS http://mapping-cloud.argo.svc.cluster.local:18080/api/cloud)"
             echo "${payload}" | grep '"clouds"' >/dev/null
             echo "${payload}" | grep '"vehicle1"' >/dev/null
       nodeSelector:
-        perception.role: general
+        vehicle.role: general
 
     - name: restart-vehicle1
       podSpecPatch: |
@@ -106,9 +106,9 @@ spec:
           - name: vehicle-dev
             mountPath: /dev
       nodeSelector:
-        perception.vehicle.id: vehicle1
+        vehicle.id: vehicle1
       tolerations:
-        - key: perception.role
+        - key: vehicle.role
           operator: Equal
           value: vehicle
           effect: NoSchedule
@@ -142,9 +142,9 @@ spec:
           - name: vehicle-dev
             mountPath: /dev
       nodeSelector:
-        perception.vehicle.id: vehicle2
+        vehicle.id: vehicle2
       tolerations:
-        - key: perception.role
+        - key: vehicle.role
           operator: Equal
           value: vehicle
           effect: NoSchedule
@@ -178,9 +178,9 @@ spec:
           - name: vehicle-dev
             mountPath: /dev
       nodeSelector:
-        perception.vehicle.id: vehicle1
+        vehicle.id: vehicle1
       tolerations:
-        - key: perception.role
+        - key: vehicle.role
           operator: Equal
           value: vehicle
           effect: NoSchedule
@@ -214,9 +214,9 @@ spec:
           - name: vehicle-dev
             mountPath: /dev
       nodeSelector:
-        perception.vehicle.id: vehicle2
+        vehicle.id: vehicle2
       tolerations:
-        - key: perception.role
+        - key: vehicle.role
           operator: Equal
           value: vehicle
           effect: NoSchedule

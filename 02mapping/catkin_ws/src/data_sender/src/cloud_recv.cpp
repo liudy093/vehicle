@@ -226,7 +226,7 @@ std::string fused_cloud_topic_name = "fused";
 std::string global_cloud_topic_name = "global_cloud";
 std::string global_map_topic_name = "global_map";
 std::string optimized_global_map_topic_name = "global_map_optimized";
-std::string global_map_export_dir = "/tmp/perception_maps";
+std::string global_map_export_dir = "/tmp/mapping_maps";
 std::string global_map_export_prefix = "global_map";
 std::unordered_set<std::string> fused_lidar_ids;
 data_listener2::LidarExtrinsicsMap fused_lidar_extrinsics;
@@ -760,7 +760,7 @@ int main(int argc, char**argv) {
         "optimized_global_map_topic_name",
         optimized_global_map_topic_name,
         "global_map_optimized");
-    private_nh.param<std::string>("global_map_export_dir", global_map_export_dir_param, "/tmp/perception_maps");
+    private_nh.param<std::string>("global_map_export_dir", global_map_export_dir_param, "/tmp/mapping_maps");
     private_nh.param<std::string>("global_map_export_prefix", global_map_export_prefix_param, "global_map");
     private_nh.param<std::string>("fused_lidar_ids", fused_lidar_ids_config, "forward,left,right");
     private_nh.param<std::string>(

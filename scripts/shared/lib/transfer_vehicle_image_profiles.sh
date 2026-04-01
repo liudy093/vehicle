@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export KUBECONFIG=/tmp/perception.k3s.yaml
+export KUBECONFIG=/tmp/vehicle.k3s.yaml
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/lib/common.sh"
-source "${SCRIPT_DIR}/vehicle_inventory.sh"
+SHARED_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+source "${SCRIPT_DIR}/common.sh"
+source "${SHARED_DIR}/vehicle_inventory.sh"
 IMAGE_PROFILE="${IMAGE_PROFILE:-all}"
 WORKER_HOSTS="${WORKER_HOSTS:-root@172.16.2.81 root@172.16.2.82 root@172.16.2.83}"
 VEHICLE_HOSTS="${VEHICLE_HOSTS:-$(vehicle_inventory_host "vehicle1" "nvidia") $(vehicle_inventory_host "vehicle2" "nvidia")}"
@@ -18,14 +19,15 @@ VEHICLE_MAPPING_RUNNER_IMAGE_TAR="${VEHICLE_MAPPING_RUNNER_IMAGE_TAR:-/tmp/vehic
 VEHICLE_ARGOEXEC_IMAGE_TAR="${VEHICLE_ARGOEXEC_IMAGE_TAR:-/tmp/argoexec-${ARGO_WORKFLOWS_VERSION}.arm64.tar}"
 VEHICLE_PAUSE_IMAGE_TAR="${VEHICLE_PAUSE_IMAGE_TAR:-/tmp/rancher-mirrored-pause-3.6.arm64.tar}"
 ARGOEXEC_IMAGE_TAR="${ARGOEXEC_IMAGE_TAR:-/tmp/argoexec-${ARGO_WORKFLOWS_VERSION}.amd64.tar}"
-REMOTE_IMAGE_CACHE_DIR="${REMOTE_IMAGE_CACHE_DIR:-/var/lib/perception/image-cache}"
+REMOTE_IMAGE_CACHE_DIR="${REMOTE_IMAGE_CACHE_DIR:-/var/lib/vehicle/image-cache}"
 SSH_OPTS=()
 SSH_IDENTITY_FILE="${SSH_IDENTITY_FILE:-}"
+IMAGE_SCRIPT_NAME="${IMAGE_SCRIPT_NAME:-./scripts/shared/transfer_vehicle_image_profiles.sh}"
 
 usage() {
   cat <<EOF
 Usage:
-  ./scripts/shared/transfer_vehicle_orchestration_images.sh
+  ${IMAGE_SCRIPT_NAME}
 
 Environment variables:
   IMAGE_PROFILE             Default: ${IMAGE_PROFILE} (all, autodrive, or mapping)

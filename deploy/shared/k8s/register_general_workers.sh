@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export KUBECONFIG=/tmp/perception.k3s.yaml
+export KUBECONFIG=/tmp/vehicle.k3s.yaml
 
 WORKER_IDS="${WORKER_IDS:-k3s-worker-1 k3s-worker-2 k3s-worker-3}"
 
@@ -11,7 +11,7 @@ if ! command -v kubectl >/dev/null 2>&1; then
 fi
 
 for node in ${WORKER_IDS}; do
-  kubectl label node "${node}" perception.role=general --overwrite
+  kubectl label node "${node}" vehicle.role=general --overwrite
 done
 
 cat <<'EOF'

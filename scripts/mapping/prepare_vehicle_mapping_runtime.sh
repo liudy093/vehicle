@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REMOTE_MAPPING_DIR="${REMOTE_MAPPING_DIR:-/home/nvidia/mapping}"
-SOURCE_MAPPING_DIR="${SOURCE_MAPPING_DIR:-/home/nvidia/perception/02mapping}"
+SOURCE_MAPPING_DIR="${SOURCE_MAPPING_DIR:-/home/nvidia/mapping/02mapping}"
 
 mkdir -p "${REMOTE_MAPPING_DIR}"
 

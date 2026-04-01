@@ -20,8 +20,8 @@ Environment variables:
   USE_RVIZ           Default: false
   SENDER_NAME        Default: lidar_data_sender
   LIVOX_CONFIG_DIR   Optional host directory mounted to /config/livox
-  LOG_DIR            Optional host directory mounted to /data/perception/logs
-  PCD_DIR            Optional host directory mounted to /data/perception/pcd
+  LOG_DIR            Optional host directory mounted to /data/mapping/logs
+  PCD_DIR            Optional host directory mounted to /data/mapping/pcd
 EOF
 }
 
@@ -100,11 +100,11 @@ if [[ -n "${LIVOX_CONFIG_DIR}" ]]; then
 fi
 
 if [[ -n "${LOG_DIR}" ]]; then
-  cmd+=(-v "${LOG_DIR}:/data/perception/logs")
+  cmd+=(-v "${LOG_DIR}:/data/mapping/logs")
 fi
 
 if [[ -n "${PCD_DIR}" ]]; then
-  cmd+=(-v "${PCD_DIR}:/data/perception/pcd")
+  cmd+=(-v "${PCD_DIR}:/data/mapping/pcd")
 fi
 
 cmd+=("${IMAGE_NAME}")

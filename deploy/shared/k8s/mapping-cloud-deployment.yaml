@@ -1,32 +1,32 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: perception-cloud
-  namespace: perception
+  name: mapping-cloud
+  namespace: argo
   labels:
-    app.kubernetes.io/name: perception-cloud
-    app.kubernetes.io/part-of: perception-cloud
+    app.kubernetes.io/name: mapping-cloud
+    app.kubernetes.io/part-of: mapping-cloud
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: perception-cloud
+      app: mapping-cloud
   template:
     metadata:
       labels:
-        app: perception-cloud
-        app.kubernetes.io/name: perception-cloud
-        app.kubernetes.io/part-of: perception-cloud
+        app: mapping-cloud
+        app.kubernetes.io/name: mapping-cloud
+        app.kubernetes.io/part-of: mapping-cloud
     spec:
       nodeSelector:
-        perception.role: general
+        vehicle.role: general
       volumes:
-        - name: perception-maps
+        - name: mapping-maps
           emptyDir: {}
       containers:
-        - name: perception-cloud
+        - name: mapping-cloud
           image: vehicle-cloud:amd64
           imagePullPolicy: IfNotPresent
           ports:
@@ -36,10 +36,10 @@ spec:
               containerPort: 18080
           envFrom:
             - configMapRef:
-                name: perception-cloud-config
+                name: mapping-cloud-config
           volumeMounts:
-            - name: perception-maps
-              mountPath: /tmp/perception_maps
+            - name: mapping-maps
+              mountPath: /tmp/mapping_maps
           readinessProbe:
             httpGet:
               path: /api/cloud

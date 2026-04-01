@@ -57,9 +57,9 @@ spec:
           - name: vehicle-dev
             mountPath: /dev
       nodeSelector:
-        perception.vehicle.id: "{{workflow.parameters.target_vehicle}}"
+        vehicle.id: "{{workflow.parameters.target_vehicle}}"
       tolerations:
-        - key: perception.role
+        - key: vehicle.role
           operator: Equal
           value: vehicle
           effect: NoSchedule
@@ -86,9 +86,9 @@ spec:
           - name: vehicle-dev
             mountPath: /dev
       nodeSelector:
-        perception.vehicle.id: "{{workflow.parameters.target_vehicle}}"
+        vehicle.id: "{{workflow.parameters.target_vehicle}}"
       tolerations:
-        - key: perception.role
+        - key: vehicle.role
           operator: Equal
           value: vehicle
           effect: NoSchedule
